@@ -1,0 +1,590 @@
+# EasyShift API 接口文档
+
+| 项目 | 内容 |
+|------|------|
+| 文档版本 | v1.0 |
+| 关联文档 | [PRD.md](./PRD.md) · [DATABASE.md](./DATABASE.md) · [SECURITY.md](./SECURITY.md) |
+
+---
+
+## 1. 总则
+
+### 1.1 基础信息
+
+| 项 | 值 |
+|----|-----|
+| Base URL | `/api/v1` |
+| 协议 | HTTPS（生产）；本地开发可用 HTTP |
+| 数据格式 | JSON，`Content-Type: application/json` |
+| 字符编码 | UTF-8 |
+| 时区 | 东八区（`Asia/Shanghai`），日期字段 `YYYY-MM-DD`，时间 `HH:mm:ss` |
+
+### 1.2 鉴权
+
+| 端 | 方式 | 说明 |
+|----|------|------|
+| Web 管理端 | HttpOnly Cookie | 登录成功后 Set-Cookie；后续请求自动携带；`withCredentials: true` |
+| 小程序 | Bearer Token | `Authorization: Bearer <token>` |
+
+未鉴权或 Token 无效返回 `401`。权限不足返回 `403`。
+
+### 1.3 统一响应格式
+
+**成功**（单资源）：
+
+```json
+{
+  "data": { ... }
+}
+```
+
+**成功**（列表，带分页）：
+
+```json
+{
+  "data": [ ... ],
+  "meta": {
+    "page": 1,
+    "pageSize": 20,
+    "total": 100
+  }
+}
+```
+
+**失败**：
+
+```json
+{
+  "error": {
+    "code": "EMPLOYEE_NO_DUPLICATE",
+    "message": "工号已存在",
+    "details": {}
+  }
+}
+```
+
+### 1.4 通用错误码
+
+| HTTP | code | 说明 |
+|------|------|------|
+| 400 | `VALIDATION_ERROR` | 参数校验失败 |
+| 401 | `UNAUTHORIZED` | 未登录或 Token 无效 |
+| 403 | `FORBIDDEN` | 无权限 |
+| 404 | `NOT_FOUND` | 资源不存在 |
+| 409 | `CONFLICT` | 唯一约束冲突（工号、同天双班等） |
+| 422 | `BUSINESS_RULE_VIOLATION` | 业务规则（如绑定码无效） |
+| 429 | `RATE_LIMITED` | 限流 |
+| 500 | `INTERNAL_ERROR` | 服务器错误 |
+
+业务子码示例：`EMPLOYEE_NO_DUPLICATE`、`SCHEDULE_ENTRY_CONFLICT`、`BINDING_CODE_INVALID`、`PERIOD_NOT_PUBLISHED`。
+
+### 1.5 写操作 CSRF（Web）
+
+涉及状态变更的 Web 接口校验 `Origin` / `Referer` 与 `CORS_ORIGIN` 白名单一致。Cookie 设置 `SameSite=Lax`（或更严格）。
+
+---
+
+## 2. 认证 — Web 管理端
+
+### POST `/auth/admin/login`
+
+管理员登录。
+
+**请求体**：
+
+```json
+{
+  "phone": "13800000000",
+  "password": "your_password"
+}
+```
+
+**响应**：`200`，Set-Cookie +：
+
+```json
+{
+  "data": {
+    "user": {
+      "id": 1,
+      "phone": "13800000000",
+      "role": "admin"
+    },
+    "department": {
+      "id": 1,
+      "name": "心内科一病区"
+    }
+  }
+}
+```
+
+**错误**：`401` 账号或密码错误；`403` 账号已停用。
+
+---
+
+### POST `/auth/admin/logout`
+
+登出，清除 Cookie。`200`。
+
+---
+
+### GET `/auth/admin/me`
+
+当前登录管理员信息与科室。需 Cookie 鉴权。
+
+---
+
+## 3. 认证 — 小程序
+
+### POST `/auth/miniprogram/login`
+
+微信 `wx.login` 获取的 `code` 换 openid；已绑定员工返回 Token。
+
+**请求体**：
+
+```json
+{
+  "code": "wx_login_code"
+}
+```
+
+**响应**（已绑定）：
+
+```json
+{
+  "data": {
+    "bound": true,
+    "token": "eyJ...",
+    "expiresAt": "2026-07-23T10:00:00+08:00",
+    "employee": {
+      "id": 1,
+      "name": "张三",
+      "employeeNo": "N001",
+      "departmentName": "心内科一病区"
+    }
+  }
+}
+```
+
+**响应**（未绑定）：`bound: false`，无 Token。
+
+---
+
+### POST `/auth/miniprogram/bind`
+
+绑定码 + 手机号后四位完成绑定并签发 Token。
+
+**请求体**：
+
+```json
+{
+  "code": "wx_login_code",
+  "bindingCode": "A8K2M9",
+  "phoneLastFour": "9000"
+}
+```
+
+**错误**：`422` + `BINDING_CODE_INVALID` / `PHONE_MISMATCH` / `ALREADY_BOUND`。
+
+---
+
+### POST `/auth/miniprogram/unbind`
+
+解绑当前微信与员工关系，作废 Token。需 Bearer 鉴权 + 二次确认参数。
+
+**请求体**：`{ "confirm": true }`
+
+---
+
+## 4. 科室
+
+### GET `/department`
+
+获取当前科室信息。Web admin。
+
+### PUT `/department`
+
+更新科室名称。Web admin。
+
+**请求体**：`{ "name": "心内科一病区" }`
+
+---
+
+## 5. 员工管理
+
+路径前缀 `/employees`。均需 Web admin 鉴权。
+
+### GET `/employees`
+
+员工列表。
+
+**查询参数**：`status`（`active`/`inactive`）、`page`、`pageSize`
+
+**响应项字段**：`id`、`employeeNo`、`name`、`title`、`phone`、`status`、`bindingStatus`（`bound`/`unbound`）
+
+---
+
+### POST `/employees`
+
+新增员工。
+
+**请求体**：
+
+```json
+{
+  "employeeNo": "N001",
+  "name": "张三",
+  "title": "护士",
+  "phone": "13900139000"
+}
+```
+
+**错误**：`409` `EMPLOYEE_NO_DUPLICATE`
+
+---
+
+### GET `/employees/:id`
+
+员工详情。
+
+---
+
+### PUT `/employees/:id`
+
+更新员工。v1 允许修改 `employeeNo`，但必须保持科室内唯一；重复时返回 `409 EMPLOYEE_NO_DUPLICATE`。
+
+**请求体**：
+
+```json
+{
+  "employeeNo": "N001",
+  "name": "张三",
+  "title": "护士",
+  "phone": "13900139000",
+  "status": "active"
+}
+```
+
+---
+
+### POST `/employees/:id/deactivate`
+
+停用员工。停用后不可新排班，历史保留。
+
+---
+
+### POST `/employees/:id/binding-code`
+
+生成绑定码（使旧 active 码失效）。
+
+**响应**：
+
+```json
+{
+  "data": {
+    "bindingCode": "A8K2M9",
+    "expiresAt": "2026-06-27T10:00:00+08:00"
+  }
+}
+```
+
+明文绑定码仅在此响应中出现一次。
+
+---
+
+## 6. 班次类型
+
+路径前缀 `/shift-types`。Web admin。
+
+### GET `/shift-types`
+
+列表，默认按 `sortOrder` 排序。
+
+### POST `/shift-types`
+
+创建班次类型。
+
+**请求体**：
+
+```json
+{
+  "code": "D",
+  "name": "白班",
+  "startTime": "08:00:00",
+  "durationMinutes": 480,
+  "color": "#4CAF50",
+  "minRequiredCount": 3,
+  "sortOrder": 1
+}
+```
+
+### PUT `/shift-types/:id`
+
+更新（被历史引用时不可删，只能停用）。
+
+### POST `/shift-types/:id/deactivate`
+
+停用班次类型。
+
+---
+
+## 7. 排班周期与条目
+
+### GET `/schedule/periods`
+
+按周查询周期列表。Web admin。
+
+**查询参数**：`fromWeekStart`、`toWeekStart`（date）
+
+---
+
+### POST `/schedule/periods`
+
+创建排班周期（若已存在同周返回现有或 `409`）。
+
+**请求体**：`{ "weekStart": "2026-06-22" }` — 必须为周一
+
+---
+
+### GET `/schedule/periods/:periodId`
+
+周期详情 + 元数据：`editStatus`、`hasUnpublishedChanges`、`latestPublishedVersion`、`lastPublishedAt`
+
+---
+
+### GET `/schedule/periods/:periodId/grid`
+
+Web 排班表整表数据。
+
+**响应**：
+
+```json
+{
+  "data": {
+    "period": { ... },
+    "employees": [ ... ],
+    "shiftTypes": [ ... ],
+    "entries": [
+      {
+        "employeeId": 1,
+        "workDate": "2026-06-22",
+        "shiftTypeId": 1,
+        "note": null
+      }
+    ],
+    "dailyCoverage": [ ... ],
+    "warnings": [ ... ]
+  }
+}
+```
+
+---
+
+### PUT `/schedule/periods/:periodId/entries`
+
+批量 upsert 排班条目（单元格保存）。
+
+**请求体**：
+
+```json
+{
+  "entries": [
+    {
+      "employeeId": 1,
+      "workDate": "2026-06-22",
+      "shiftTypeId": 1,
+      "note": null
+    }
+  ]
+}
+```
+
+`PUT` 仅用于设置或更新班次，`shiftTypeId` 必须为有效班次类型 ID；不接受 `null`。清空排班格子统一使用 `DELETE /schedule/periods/:periodId/entries`。
+
+**错误**：
+
+- `400 VALIDATION_ERROR`：`shiftTypeId` 为空或不是有效班次类型 ID
+- `409 SCHEDULE_ENTRY_CONFLICT`：同员工同天重复（WEB-VAL-01）
+
+**副作用**：已发布周期写入后 `hasUnpublishedChanges = true`。
+
+---
+
+### DELETE `/schedule/periods/:periodId/entries`
+
+清空指定排班格子。
+
+**请求体**：`{ "employeeId": 1, "workDate": "2026-06-22" }`
+
+若指定格子原本不存在，返回 `204 No Content`，保持幂等。
+
+**副作用**：已发布周期删除后 `hasUnpublishedChanges = true`。
+
+---
+
+### POST `/schedule/periods/:periodId/copy-from-previous-week`
+
+复制上周草稿到当前周期（覆盖目标周已有草稿）。PRD AC-04。
+
+**请求体**：无或 `{ "sourceWeekStart": "2026-06-15" }`（默认上周）
+
+---
+
+### GET `/schedule/periods/:periodId/validation`
+
+校验警告摘要（不阻断，供发布弹窗展示）。
+
+**响应**：
+
+```json
+{
+  "data": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "COVERAGE_BELOW_MIN",
+        "workDate": "2026-06-22",
+        "shiftTypeId": 1,
+        "message": "白班仅 2 人，低于最低 3 人"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### GET `/schedule/periods/:periodId/stats`
+
+公平性统计：每人大夜班次数、总班次数等。Web 侧栏。
+
+---
+
+## 8. 发布
+
+### POST `/schedule/periods/:periodId/publish`
+
+发布本周期。事务内：锁定 period → 递增 version → 写入 snapshot → 更新 period → 写 change_log。
+
+**请求体**（可选）：`{ "acknowledgeWarnings": true }` — 存在 warnings 时需确认
+
+**响应**：
+
+```json
+{
+  "data": {
+    "version": 2,
+    "publishedAt": "2026-06-20T10:00:00+08:00",
+    "notificationText": "【心内科一病区】下周班表已更新..."
+  }
+}
+```
+
+**错误**：`409` 并发发布冲突（客户端可重试）。
+
+---
+
+### GET `/schedule/periods/:periodId/notification-text`
+
+生成微信群通知文案（不发布也可预览上一版）。Web admin。
+
+---
+
+## 9. 操作日志
+
+### GET `/schedule/periods/:periodId/change-logs`
+
+分页查询操作记录。Web admin。
+
+---
+
+## 10. 小程序 — 员工班表
+
+均需 Bearer + `staff` 角色。
+
+### GET `/staff/me`
+
+个人资料：姓名、工号、科室。
+
+---
+
+### GET `/staff/schedule`
+
+我的班表（只读最新发布快照）。
+
+**查询参数**：`weekStart`（date，周一）— 默认当前周
+
+**响应**（已发布）：
+
+```json
+{
+  "data": {
+    "weekStart": "2026-06-22",
+    "publishedAt": "2026-06-20T10:00:00+08:00",
+    "version": 2,
+    "days": [
+      {
+        "workDate": "2026-06-22",
+        "weekday": 1,
+        "shift": {
+          "code": "D",
+          "name": "白班",
+          "startTime": "08:00:00",
+          "durationMinutes": 480,
+          "color": "#4CAF50"
+        },
+        "note": null
+      }
+    ]
+  }
+}
+```
+
+**响应**（未发布）：`publishedAt: null`，`days` 为空或带 `status: "not_published"`。
+
+---
+
+### GET `/staff/schedule/summary`
+
+本周班次类型数量汇总（P2）。MP-STAT-01。
+
+---
+
+## 11. 健康检查
+
+### GET `/health`
+
+无需鉴权。`{ "status": "ok" }`
+
+---
+
+## 12. 共享类型（packages/shared-types/src）
+
+以下类型由 `packages/shared-types/src` 导出，Web / 小程序 / API 共用：
+
+| 类型 | 说明 |
+|------|------|
+| `UserRole` | `admin` \| `staff` |
+| `EmployeeStatus` | `active` \| `inactive` |
+| `PeriodEditStatus` | `draft` \| `published` |
+| `ShiftTypeDto` | 班次类型 API 形状 |
+| `ScheduleEntryDto` | 排班条目 |
+| `ScheduleGridDto` | 整表响应 |
+| `StaffScheduleDayDto` | 员工端单日班表 |
+| `ApiError` | 统一错误体 |
+| `weekStartFromDate(date)` | 计算所在周周一 |
+
+跨日班次：存储 `startTime` + `durationMinutes`；展示结束时间由客户端或 API 按 T-02 规则计算。
+
+---
+
+## 13. OpenAPI（后续）
+
+v1 以本文档 + `shared-types` 为契约源。实现稳定后可导出 `docs/openapi.yaml` 供 MSW handler 与外部工具对齐。MSW handlers 路径：`apps/web/src/test/handlers.ts`。
+
+---
+
+## 14. 文档修订记录
+
+| 版本 | 日期 | 说明 |
+|------|------|------|
+| v1.0 | 2026-06-23 | 初版 REST 契约 |

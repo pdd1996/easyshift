@@ -1,0 +1,4 @@
+<view class="container">
+  <text class="title">EasyShift 易排班</text>
+  <text class="desc">{{message}}</text>
+</view>

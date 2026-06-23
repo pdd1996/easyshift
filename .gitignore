@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+*.log
+.env
+.env.local
+.env.*.local
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+apps/api/drizzle/meta/_journal.json.bak
+playwright-report/
+test-results/
+apps/miniapp/miniprogram_npm/

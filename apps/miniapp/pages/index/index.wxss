@@ -1,0 +1,15 @@
+.container {
+  padding: 48rpx;
+}
+
+.title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 600;
+  margin-bottom: 16rpx;
+}
+
+.desc {
+  display: block;
+  color: #666;
+}

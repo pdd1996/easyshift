@@ -1,0 +1,15 @@
+{
+  "description": "EasyShift 员工端小程序",
+  "packOptions": {
+    "ignore": []
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "minified": true
+  },
+  "compileType": "miniprogram",
+  "appid": "touristappid",
+  "projectname": "easyshift-miniapp",
+  "miniprogramRoot": "./"
+}

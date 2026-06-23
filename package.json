@@ -1,0 +1,23 @@
+{
+  "name": "easyshift",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @easyshift/api --filter @easyshift/web dev",
+    "dev:api": "pnpm --filter @easyshift/api dev",
+    "dev:web": "pnpm --filter @easyshift/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:api": "pnpm --filter @easyshift/api test",
+    "test:e2e": "pnpm --filter @easyshift/e2e test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @easyshift/api db:generate",
+    "db:migrate": "pnpm --filter @easyshift/api db:migrate",
+    "db:seed": "pnpm --filter @easyshift/api db:seed",
+    "db:studio": "pnpm --filter @easyshift/api db:studio"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

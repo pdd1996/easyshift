@@ -1,0 +1,13 @@
+{
+  "name": "@easyshift/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "lint": "echo \"no lint configured\"",
+    "typecheck": "echo \"no typecheck configured\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.1"
+  }
+}

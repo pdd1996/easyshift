@@ -1,0 +1,54 @@
+import { Layout, Menu, Typography, Button } from 'antd';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { logoutAdmin, useAdminSession } from '@/features/auth/api';
+
+const { Header, Sider, Content } = Layout;
+
+export function AppLayout() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { data: session } = useAdminSession();
+
+  const logoutMutation = useMutation({
+    mutationFn: logoutAdmin,
+    onSuccess: async () => {
+      await queryClient.resetQueries({ queryKey: ['admin', 'me'] });
+      navigate('/login');
+    },
+  });
+
+  return (
+    <Layout className="min-h-screen">
+      <Sider theme="light" width={220} className="border-r border-gray-200">
+        <div className="px-4 py-5">
+          <Typography.Title level={5} className="!mb-0">
+            EasyShift
+          </Typography.Title>
+          <Typography.Text type="secondary">{session?.department.name}</Typography.Text>
+        </div>
+        <Menu
+          mode="inline"
+          selectedKeys={['dashboard']}
+          items={[
+            { key: 'dashboard', label: '工作台' },
+            { key: 'employees', label: '员工管理', disabled: true },
+            { key: 'shifts', label: '班次类型', disabled: true },
+            { key: 'schedule', label: '排班表', disabled: true },
+          ]}
+        />
+      </Sider>
+      <Layout>
+        <Header className="flex items-center justify-between bg-white px-6">
+          <Typography.Text>{session?.user.phone}</Typography.Text>
+          <Button onClick={() => logoutMutation.mutate()} loading={logoutMutation.isPending}>
+            退出登录
+          </Button>
+        </Header>
+        <Content className="p-6">
+          <Outlet />
+        </Content>
+      </Layout>
+    </Layout>
+  );
+}

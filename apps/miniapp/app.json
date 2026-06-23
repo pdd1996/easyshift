@@ -1,0 +1,7 @@
+{
+  "pages": ["pages/index/index"],
+  "window": {
+    "navigationBarTitleText": "EasyShift 易排班",
+    "navigationBarBackgroundColor": "#ffffff"
+  }
+}
