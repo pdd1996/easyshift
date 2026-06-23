@@ -90,11 +90,19 @@ export function requireStaff() {
 }
 
 export async function validateCsrfOrigin(c: Context) {
-  const origin = c.req.header('Origin') ?? c.req.header('Referer');
-  if (!origin) {
+  const source = c.req.header('Origin') ?? c.req.header('Referer');
+  if (!source) {
     throw new AppError(403, 'FORBIDDEN', '缺少 Origin 校验信息');
   }
-  if (!origin.startsWith(env.CORS_ORIGIN)) {
+
+  let requestOrigin: string;
+  try {
+    requestOrigin = new URL(source).origin;
+  } catch {
+    throw new AppError(403, 'FORBIDDEN', 'Origin 格式无效');
+  }
+
+  if (requestOrigin !== env.CORS_ORIGIN) {
     throw new AppError(403, 'FORBIDDEN', 'Origin 不在白名单内');
   }
 }
