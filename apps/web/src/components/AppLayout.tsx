@@ -44,12 +44,13 @@ export function AppLayout() {
             if (key === 'dashboard') navigate('/');
             if (key === 'employees') navigate('/employees');
             if (key === 'shifts') navigate('/shift-types');
+            if (key === 'schedule') navigate('/schedule');
           }}
           items={[
             { key: 'dashboard', label: '工作台' },
+            { key: 'schedule', label: '排班表' },
             { key: 'employees', label: '员工管理' },
             { key: 'shifts', label: '班次类型' },
-            { key: 'schedule', label: '排班表', disabled: true },
           ]}
         />
       </Sider>

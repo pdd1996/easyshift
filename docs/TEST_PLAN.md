@@ -199,7 +199,7 @@ easyshift/
 
 ### 5.4 排班表（核心）
 
-**PRD**：WEB-SCH-01～10 · **AC**：AC-03、AC-06 · **文件**：`apps/web/src/features/schedule/test-spec.md`
+**PRD**：WEB-SCH-01～12 · **AC**：AC-03、AC-06 · **文件**：`apps/web/src/features/schedule/test-spec.md`
 
 | ID | 类型 | PRD | 断言 | 测试 |
 |----|------|-----|------|------|
@@ -208,11 +208,14 @@ easyshift/
 | r3 | 渲染 | WEB-SCH-09 | 单元格展示班次简称与配置颜色 | COMP |
 | r4 | 渲染 | WEB-SCH-10 / AC-06 | 每日各班次「已排/最低」统计行 | COMP |
 | r5 | 渲染 | WEB-STAT-03 / AC-06 | 未达标单元格/行高亮 | COMP |
+| r6 | 渲染 | WEB-SCH-12 | 日期表头展示周末、法定节假日、调休/放假标记 | COMP |
+| r7 | 渲染 | WEB-SCH-10 | 覆盖统计隐藏 `0/0`；`min=0` 且已排人数 > 0 时仅展示人数 | COMP |
 | i1 | 交互 | WEB-SCH-02 / AC-03 | 点击空格弹出班次选择，选中后格内更新 | COMP + E2E |
 | i2 | 交互 | WEB-SCH-02 | 支持清空单元格班次 | COMP |
 | i3 | 交互 | WEB-SCH-04 | 「创建下周排班」生成空草稿周期 | COMP + API |
 | i4 | 交互 | WEB-DEPT-03 | 切换上一周/下一周加载对应周期 | COMP |
 | i5 | 交互 | WEB-SCH-05 | 已发布周期编辑首格时弹出二次确认 | COMP |
+| i6 | 交互 | WEB-SCH-11 | 周 / 月视图切换后，月视图可浏览整月并跳转到对应周视图 | COMP |
 | s1 | 状态 | WEB-SCH-06 / AC-08 | 已发布周期改草稿后徽章「有未发布变更」 | COMP + API + E2E |
 | s2 | 状态 | WEB-SCH-08 | 停用员工不出现在新周期行中 | API |
 | s3 | 状态 | — | 接口 500 时排班表显示「加载失败」 | COMP |
@@ -221,12 +224,13 @@ easyshift/
 
 ### 5.5 冲突与校验
 
-**PRD**：WEB-VAL-01～05 · **AC**：AC-05 · **文件**：`apps/api/src/services/validation/test-spec.md`
+**PRD**：WEB-VAL-01～06 · **AC**：AC-05 · **文件**：`apps/api/src/services/validation/test-spec.md`
 
 | ID | 类型 | PRD | 断言 | 测试 |
 |----|------|-----|------|------|
 | u1 | 逻辑 | WEB-VAL-01 / AC-05 | 同员工同天两班次 → `errors` 含 duplicate-day | UNIT |
 | u2 | 逻辑 | WEB-VAL-02 | 大夜结束后 24h 内白班 → `warnings` 含 rest-violation | UNIT |
+| c1 | 交互 | WEB-VAL-06 | 初次进入排班页不展开 warnings 摘要，点击「检查覆盖 / 检查排班」后展示 | COMP |
 | u3 | 逻辑 | WEB-VAL-03 | 连续 3 天大夜 → `warnings` 含 consecutive-night | UNIT |
 | u4 | 逻辑 | WEB-VAL-04 / AC-05 | 白班最低 3 人只排 2 人 → `warnings` 含 under-coverage | UNIT |
 | u5 | 逻辑 | WEB-VAL-05 | 大夜次数 > 均值+1 → `warnings` 含 fairness | UNIT |
