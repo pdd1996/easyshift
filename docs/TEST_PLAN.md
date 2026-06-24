@@ -75,9 +75,11 @@ Ant Design 组件测试默认使用 `jsdom`，并在测试 setup 中统一 polyf
 easyshift/
 ├── apps/api/src/
 │   ├── services/
-│   │   ├── validation/
-│   │   │   ├── schedule-validator.ts
-│   │   │   └── __tests__/schedule-validator.test.ts    # UNIT
+│   ├── services/schedule/
+│   │   ├── rule-warnings.ts                              # 规则校验（WEB-VAL-02～03）
+│   │   ├── warnings.ts                                 # 覆盖 + 规则警告合并
+│   │   ├── rule-warnings.test.ts                         # UNIT
+│   │   └── validation.test.ts                            # UNIT
 │   │   ├── stats/
 │   │   └── publish/
 │   └── __tests__/                                       # API
@@ -182,18 +184,19 @@ easyshift/
 
 ### 5.3 班次类型
 
-**PRD**：WEB-SHIFT-01～05 · **AC**：AC-02 · **文件**：`apps/web/src/features/shift-types/test-spec.md`
+**PRD**：WEB-SHIFT-01～06 · **AC**：AC-02 · **实现**：`apps/web/src/features/shift-types/ShiftTypesPage.tsx`
 
-| ID | 类型 | PRD | 断言 | 测试 |
-|----|------|-----|------|------|
-| r1 | 渲染 | WEB-SHIFT-01 | 列表含名称、代码、时间段、颜色 | COMP |
-| i1 | 交互 | WEB-SHIFT-02 | 编辑大夜班开始时间与时长并保存 | COMP + API |
-| i2 | 交互 | WEB-SHIFT-05 | 修改某班次最低覆盖人数 | COMP + API |
-| s1 | 状态 | WEB-SHIFT-04 | 「休息」班次时间段可为空 | UNIT + API |
-| s2 | 状态 | — | 代码重复返回 409 | API |
-| u1 | 逻辑 | WEB-SHIFT 默认 N | 大夜班 20:00 + 720min → 展示跨至次日 08:00 | UNIT |
+| ID | 类型 | PRD | 断言 | 测试 | 状态 |
+|----|------|-----|------|------|------|
+| r1 | 渲染 | WEB-SHIFT-01 | 列表含名称、代码、规则类型、时间段、颜色 | COMP | — |
+| i1 | 交互 | WEB-SHIFT-02 | 编辑大夜班开始时间与时长并保存 | COMP + API | ✓ `shift-types.test.ts` |
+| i2 | 交互 | WEB-SHIFT-05 | 修改某班次最低覆盖人数 | COMP + API | ✓ |
+| i3 | 交互 | WEB-SHIFT-06 | 新增/编辑时可选择规则类型 kind；code 可改为中文/英文 | COMP + API | ✓ |
+| s1 | 状态 | WEB-SHIFT-04 | 「休息」班次时间段可为空 | UNIT + API | ✓ |
+| s2 | 状态 | — | 代码重复返回 409 | API | ✓ |
+| u1 | 逻辑 | WEB-SHIFT 默认 N | 大夜班 20:00 + 720min → 展示跨至次日 08:00 | UNIT | — |
 
-**UNIT 位置**：`packages/shared-types/src/shift-time/__tests__/`
+**API 位置**：`apps/api/src/shift-types.test.ts`
 
 ---
 
@@ -224,21 +227,22 @@ easyshift/
 
 ### 5.5 冲突与校验
 
-**PRD**：WEB-VAL-01～06 · **AC**：AC-05 · **文件**：`apps/api/src/services/validation/test-spec.md`
+**PRD**：WEB-VAL-01～06 · **AC**：AC-05 · **实现**：`apps/api/src/services/schedule/rule-warnings.ts`、`warnings.ts`
 
-| ID | 类型 | PRD | 断言 | 测试 |
-|----|------|-----|------|------|
-| u1 | 逻辑 | WEB-VAL-01 / AC-05 | 同员工同天两班次 → `errors` 含 duplicate-day | UNIT |
-| u2 | 逻辑 | WEB-VAL-02 | 大夜结束后 24h 内白班 → `warnings` 含 rest-violation | UNIT |
-| c1 | 交互 | WEB-VAL-06 | 初次进入排班页不展开 warnings 摘要，点击「检查覆盖 / 检查排班」后展示 | COMP |
-| u3 | 逻辑 | WEB-VAL-03 | 连续 3 天大夜 → `warnings` 含 consecutive-night | UNIT |
-| u4 | 逻辑 | WEB-VAL-04 / AC-05 | 白班最低 3 人只排 2 人 → `warnings` 含 under-coverage | UNIT |
-| u5 | 逻辑 | WEB-VAL-05 | 大夜次数 > 均值+1 → `warnings` 含 fairness | UNIT |
-| s1 | 状态 | WEB-VAL-01 | 保存含 hard error 时 API 返回 422 | API |
-| s2 | 状态 | WEB-VAL-04 | 仅 warnings 时保存成功但响应带 warnings | API |
-| i1 | 交互 | AC-05 | 同天双班时 UI 阻止保存并展示错误 | COMP + E2E |
+| ID | 类型 | PRD | 断言 | 测试 | 状态 |
+|----|------|-----|------|------|------|
+| u1 | 逻辑 | WEB-VAL-01 / AC-05 | 同员工同天两班次 → 保存 API 返回 `409 SCHEDULE_ENTRY_CONFLICT` | API | ✓ `schedule.test.ts` |
+| u2 | 逻辑 | WEB-VAL-02 | 大夜结束后 24h 内白班 → `warnings` 含 `REST_VIOLATION` | UNIT | ✓ `rule-warnings.test.ts` |
+| c1 | 交互 | WEB-VAL-06 | 初次进入排班页不展开 warnings 摘要，点击「检查排班」后展示 | COMP | — |
+| u3 | 逻辑 | WEB-VAL-03 | 连续 3 天大夜 → `warnings` 含 `CONSECUTIVE_NIGHT` | UNIT | ✓ `rule-warnings.test.ts` |
+| u6 | 逻辑 | WEB-VAL-02 / WEB-SHIFT-06 | code 为「夜/白」但 kind 为 night/day → 规则仍生效 | UNIT | ✓ `rule-warnings.test.ts` |
+| u4 | 逻辑 | WEB-VAL-04 / AC-05 | 白班最低 3 人只排 2 人 → `warnings` 含 `COVERAGE_BELOW_MIN` | UNIT + API | ✓ `validation.test.ts`、`schedule.test.ts` |
+| u5 | 逻辑 | WEB-VAL-05 | 大夜次数 > 均值+1 → `warnings` 含公平性警告 | UNIT | 未实现（P2） |
+| s1 | 状态 | WEB-VAL-01 | 保存含 hard error 时 API 返回 409 | API | ✓ `schedule.test.ts` |
+| s2 | 状态 | WEB-VAL-04 | 仅 warnings 时保存成功；warnings 经 grid / validation 接口返回 | API | ✓ |
+| i1 | 交互 | AC-05 | 同天双班时 UI 阻止保存并展示错误 | COMP + E2E | — |
 
-**UNIT 位置**：`apps/api/src/services/validation/__tests__/schedule-validator.test.ts`
+**UNIT 位置**：`apps/api/src/services/schedule/rule-warnings.test.ts`、`validation.test.ts`
 
 ---
 
@@ -328,13 +332,13 @@ v1 **不做**多模态视觉 diff；仅行为断言。CI 内 headless Chromium +
 | 场景 ID | 关联 AC | 步骤 | 期望 |
 |---------|---------|------|------|
 | E2E-01 | AC-03 | 登录 → 创建下周 → 为 10 人排满 7 天 → 保存 | 刷新后格子内容保留 |
-| E2E-02 | AC-05、AC-06 | 故意少排大夜 → 点发布 | 确认弹窗含 coverage warning |
+| E2E-02 | AC-05、AC-06 | 故意少排大夜 → 点发布 | 确认弹窗含 `COVERAGE_BELOW_MIN` 等排班 warning |
 | E2E-03 | AC-05、AC-06 | 排班表存在覆盖不足 | 页面统计区高亮未达标班次 |
 | E2E-04 | AC-07 | 发布成功 | 页面显示 version=1 与发布时间 |
 | E2E-05 | AC-08 | 发布后改一格 → 查员工 API | 仍为 v1；再发布后 API 为 v2 |
 | E2E-06 | AC-09 | 发布成功 → 点复制文案 | 剪贴板/textarea 含周期信息 |
 
-同员工同天多班属于数据层异常，正常 10×7 UI 不应制造该状态；该规则由 `schedule-validator.test.ts` 与保存 API 的 422 集成测试覆盖，不进入 E2E。
+同员工同天多班属于数据层异常，正常 10×7 UI 不应制造该状态；该规则由 `schedule.test.ts`（409）与 `rule-warnings.test.ts` 覆盖，不进入 E2E。
 
 **E2E interactions 示例**（YAML 风格，供生成脚本）：
 
@@ -360,7 +364,7 @@ interactions:
 |------|------|--------|
 | `publish.test.ts` | AC-07、AC-08、并发版本、事务 | P0 |
 | `binding.test.ts` | AC-10、AC-13、Token 失效 | P0 |
-| `schedule-validator.integration.test.ts` | AC-05 保存 422/200+warnings | P0 |
+| `schedule.test.ts` | AC-03、AC-05、AC-06、WEB-VAL-01 | P0 |
 | `employees.test.ts` | AC-01 工号唯一 | P0 |
 | `shift-types.test.ts` | AC-02 | P1 |
 | `schedule-copy.test.ts` | AC-04 | P1 |
@@ -380,7 +384,7 @@ interactions:
 
 | 模块 | 文件 | 覆盖 ID |
 |------|------|---------|
-| 排班校验 | `schedule-validator.test.ts` | u1～u5（第 5.5 节） |
+| 排班校验 | `rule-warnings.test.ts`、`validation.test.ts` | u2～u4、u6（第 5.5 节） |
 | 覆盖统计 | `coverage-counter.test.ts` | u1～u3（第 5.6 节） |
 | 班次跨日 | `shift-time.test.ts` | u1（第 5.3 节）、u1（第 5.10 节） |
 | 复制上周日期映射 | `copy-week.test.ts` | u1（第 5.8 节） |
@@ -429,7 +433,7 @@ on: push main / release
 
 | 阶段 | 内容 | 产出 |
 |------|------|------|
-| Phase 1 | Vitest workspace + 第一个 validator 单测 | `schedule-validator.test.ts` 绿 |
+| Phase 1 | Vitest workspace + 排班规则单测 | `rule-warnings.test.ts` 绿 |
 | Phase 2 | Testcontainers + migration + seed | `publish.test.ts` 绿 |
 | Phase 3 | MSW handlers + ScheduleGrid 组件 3 条 | `[r1][i1][s3]` 绿 |
 | Phase 4 | binding + staff-schedule API | AC-10、AC-11、AC-13 绿 |
@@ -442,5 +446,7 @@ on: push main / release
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.3 | 2026-06-24 | 班次类型 `kind`、规则校验与 code 解耦；迁移 0002 说明 |
+| v1.2 | 2026-06-24 | 同步排班警告实现：warning 代码、测试文件路径、WEB-VAL-05 未实现标注 |
 | v1.1 | 2026-06-20 | 修正 E2E 边界、MSW 范围、DB 隔离与组件测试环境 |
 | v1.0 | 2026-06-20 | 初版：AC 映射、test-spec 骨架、分层与 Mock 约定 |
