@@ -1,9 +1,10 @@
-import type { DailyCoverageItemDto, ScheduleEntryDto } from '@easyshift/shared-types';
+import type { DailyCoverageItemDto, ScheduleEntryDto, ShiftTypeKind } from '@easyshift/shared-types';
 
 export interface SnapshotShiftType {
   id: number;
   code: string;
   name: string;
+  kind: ShiftTypeKind;
   startTime: string | null;
   durationMinutes: number | null;
   color: string;

@@ -239,7 +239,7 @@ export function SchedulePage() {
     }
 
     if (grid.warnings.length === 0) {
-      message.success('当前没有覆盖不足警告');
+      message.success('当前没有排班警告');
       return;
     }
 
@@ -279,7 +279,7 @@ export function SchedulePage() {
             <Alert
               type="warning"
               showIcon
-              message={`存在 ${warnings.length} 条覆盖不足警告`}
+              message={`存在 ${warnings.length} 条排班警告`}
               description={
                 <ul className="mb-0 max-h-40 list-inside list-disc overflow-y-auto">
                   {warnings.map((w, i) => (
@@ -380,7 +380,7 @@ export function SchedulePage() {
               复制上周
             </Button>
             <Button onClick={handleCheckWarnings}>
-              检查覆盖{grid.warnings.length > 0 ? `（${grid.warnings.length}）` : ''}
+              检查排班{grid.warnings.length > 0 ? `（${grid.warnings.length}）` : ''}
             </Button>
             <Button
               type="primary"
@@ -408,7 +408,7 @@ export function SchedulePage() {
         <Alert
           type="warning"
           showIcon
-          message="覆盖不足"
+          message="排班警告"
           description={
             <ul className="mb-0 list-inside list-disc">
               {grid.warnings.map((w, i) => (

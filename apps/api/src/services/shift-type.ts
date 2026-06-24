@@ -1,4 +1,4 @@
-import type { ShiftTypeDto } from '@easyshift/shared-types';
+import type { ShiftTypeDto, ShiftTypeKind } from '@easyshift/shared-types';
 import { and, asc, eq, ne } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { shiftTypes } from '../db/schema/index.js';
@@ -7,6 +7,7 @@ import { AppError } from '../lib/errors.js';
 export interface ShiftTypeInput {
   code: string;
   name: string;
+  kind: ShiftTypeKind;
   startTime?: string | null;
   durationMinutes?: number | null;
   color: string;
@@ -29,6 +30,7 @@ function toShiftTypeDto(row: typeof shiftTypes.$inferSelect): ShiftTypeDto {
     id: row.id,
     code: row.code,
     name: row.name,
+    kind: row.kind,
     startTime: row.startTime,
     durationMinutes: row.durationMinutes,
     color: row.color,
@@ -108,6 +110,7 @@ export async function createShiftType(
       departmentId,
       code: input.code,
       name: input.name,
+      kind: input.kind,
       startTime: normalizeTime(input.startTime),
       durationMinutes: input.durationMinutes ?? null,
       color: input.color,
@@ -135,6 +138,7 @@ export async function updateShiftType(
     .set({
       code: input.code,
       name: input.name,
+      kind: input.kind,
       startTime: normalizeTime(input.startTime),
       durationMinutes: input.durationMinutes ?? null,
       color: input.color,

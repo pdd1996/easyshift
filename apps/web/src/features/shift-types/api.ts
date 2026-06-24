@@ -1,4 +1,5 @@
-import type { ShiftTypeDto } from '@easyshift/shared-types';
+import type { ShiftTypeDto, ShiftTypeKind } from '@easyshift/shared-types';
+import { SHIFT_TYPE_KIND_LABELS, SHIFT_TYPE_KINDS } from '@easyshift/shared-types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, type ApiErrorBody } from '@/lib/api-client';
 import type { AxiosError } from 'axios';
@@ -10,12 +11,15 @@ export interface ShiftTypeListResponse {
 export interface ShiftTypeFormValues {
   code: string;
   name: string;
+  kind: ShiftTypeKind;
   startTime?: string | null;
   durationMinutes?: number | null;
   color: string;
   minRequiredCount: number;
   sortOrder: number;
 }
+
+export { SHIFT_TYPE_KIND_LABELS, SHIFT_TYPE_KINDS };
 
 export function useShiftTypes() {
   return useQuery({

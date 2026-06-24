@@ -39,6 +39,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('shift-types API', () => {
       body: JSON.stringify({
         code: primaryCode,
         name: '测试白班',
+        kind: 'day',
         startTime: '08:00:00',
         durationMinutes: 480,
         color: '#4CAF50',
@@ -55,6 +56,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('shift-types API', () => {
     expect(body.data.code).toBe(primaryCode);
     expect(body.data.name).toBe('测试白班');
     expect(body.data.status).toBe('active');
+    expect((body.data as { kind?: string }).kind).toBe('day');
   });
 
   it('returns 409 when shift type code is duplicated (AC-02)', async () => {
@@ -64,6 +66,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('shift-types API', () => {
       body: JSON.stringify({
         code: primaryCode,
         name: '重复班次',
+        kind: 'day',
         startTime: '09:00:00',
         durationMinutes: 480,
         color: '#FF5722',
@@ -106,6 +109,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('shift-types API', () => {
       body: JSON.stringify({
         code: primaryCode,
         name: '测试白班（已改）',
+        kind: 'day',
         startTime: '07:30:00',
         durationMinutes: 510,
         color: '#2196F3',
