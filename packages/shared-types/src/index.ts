@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 export type UserRole = 'admin' | 'staff';
 
 export type UserStatus = 'active' | 'disabled';
@@ -115,6 +117,5 @@ export function weekStartFromDate(date: Date): string {
 }
 
 export function isMonday(dateStr: string): boolean {
-  const d = new Date(`${dateStr}T00:00:00+08:00`);
-  return d.getDay() === 1;
+  return dayjs(dateStr).day() === 1;
 }

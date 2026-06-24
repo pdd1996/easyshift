@@ -59,6 +59,36 @@ export async function ensureTestFixtures(): Promise<TestFixtures> {
   }
 }
 
+export async function cleanupTestPeriods(periodIds: number[]) {
+  if (periodIds.length === 0) {
+    return;
+  }
+
+  const connection = await mysql.createConnection(env.DATABASE_URL);
+  const placeholders = periodIds.map(() => '?').join(',');
+
+  try {
+    await connection.execute(
+      `DELETE FROM schedule_change_logs WHERE period_id IN (${placeholders})`,
+      periodIds,
+    );
+    await connection.execute(
+      `DELETE FROM schedule_publish_snapshots WHERE period_id IN (${placeholders})`,
+      periodIds,
+    );
+    await connection.execute(
+      `DELETE FROM schedule_entries WHERE period_id IN (${placeholders})`,
+      periodIds,
+    );
+    await connection.execute(
+      `DELETE FROM schedule_periods WHERE id IN (${placeholders})`,
+      periodIds,
+    );
+  } finally {
+    await connection.end();
+  }
+}
+
 export async function cleanupTestShiftTypes(shiftTypeIds: number[]) {
   if (shiftTypeIds.length === 0) {
     return;
