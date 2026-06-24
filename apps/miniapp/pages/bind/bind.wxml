@@ -1,0 +1,57 @@
+<view class="page" wx:if="{{!authChecking}}">
+  <view class="hero">
+    <text class="title">绑定员工账号</text>
+    <text class="subtitle">请向管理员获取绑定码，并输入登记手机号后四位</text>
+  </view>
+
+  <view class="form">
+    <view class="field">
+      <text class="label">绑定码</text>
+      <t-input
+        value="{{bindingCode}}"
+        placeholder="6 位绑定码"
+        maxlength="6"
+        clearable
+        bind:change="onBindingCodeChange"
+        bind:blur="onBindingCodeChange"
+      />
+    </view>
+
+    <view class="field">
+      <text class="label">手机号后四位</text>
+      <t-input
+        value="{{phoneLastFour}}"
+        placeholder="例如 9000"
+        type="number"
+        maxlength="4"
+        clearable
+        bind:change="onPhoneChange"
+        bind:blur="onPhoneChange"
+      />
+    </view>
+
+    <t-button
+      theme="primary"
+      size="large"
+      block
+      loading="{{submitting}}"
+      disabled="{{submitting}}"
+      bind:tap="onSubmit"
+    >
+      确认绑定
+    </t-button>
+  </view>
+
+  <view class="tips">
+    <text class="tips-title">提示</text>
+    <text class="tips-item">· 绑定码由管理员在 Web 端生成，有效期 72 小时</text>
+    <text class="tips-item">· 每个微信仅可绑定一名员工</text>
+    <text class="tips-item">· 绑定成功后即可查看已发布班表</text>
+  </view>
+</view>
+
+<view class="loading-page" wx:else>
+  <text class="loading-text">正在检查登录状态…</text>
+</view>
+
+<t-toast id="bind-toast" />

@@ -1,5 +1,9 @@
 {
-  "pages": ["pages/index/index"],
+  "pages": [
+    "pages/schedule/schedule",
+    "pages/bind/bind",
+    "pages/index/index"
+  ],
   "darkmode": true,
   "themeLocation": "theme.json",
   "window": {

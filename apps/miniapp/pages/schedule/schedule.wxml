@@ -1,0 +1,64 @@
+<view class="page" wx:if="{{!authChecking}}">
+  <view class="header">
+    <view class="employee" wx:if="{{employeeName}}">
+      <text class="employee-name">{{employeeName}}</text>
+      <text class="employee-hint">个人班表</text>
+    </view>
+
+    <view class="week-nav">
+      <t-button theme="light" size="small" bind:tap="onPrevWeek">上一周</t-button>
+      <view class="week-center">
+        <text class="week-range">{{weekRangeLabel}}</text>
+        <text
+          class="week-back"
+          wx:if="{{!isCurrentWeek}}"
+          bind:tap="onBackToCurrentWeek"
+        >回到本周</text>
+      </view>
+      <t-button theme="light" size="small" bind:tap="onNextWeek">下一周</t-button>
+    </view>
+  </view>
+
+  <view class="loading-wrap" wx:if="{{loading && days.length === 0 && !notPublished}}">
+    <t-loading theme="circular" size="40rpx" text="加载中…" />
+  </view>
+
+  <view class="empty-wrap" wx:elif="{{notPublished}}">
+    <t-empty icon="calendar" description="班表尚未发布" />
+    <text class="empty-hint">管理员发布后会自动显示最新班表</text>
+  </view>
+
+  <view class="day-list" wx:else>
+    <view class="day-card" wx:for="{{days}}" wx:key="workDate">
+      <view class="day-left">
+        <view
+          class="color-bar"
+          style="background-color: {{item.hasShift ? item.color : 'transparent'}};"
+        />
+        <view class="day-date">
+          <text class="month-day">{{item.monthDay}}</text>
+          <text class="weekday">{{item.weekdayLabel}}</text>
+        </view>
+      </view>
+
+      <view class="day-right">
+        <view class="shift-row">
+          <text class="shift-name {{item.isRest ? 'shift-rest' : ''}} {{item.hasShift ? '' : 'shift-empty'}}">
+            {{item.shiftLabel}}
+          </text>
+          <t-tag wx:if="{{item.isRest}}" theme="default" variant="light" size="small">休息</t-tag>
+        </view>
+        <text class="time-range" wx:if="{{item.timeRange}}">{{item.timeRange}}</text>
+        <text class="note" wx:if="{{item.note}}">备注：{{item.note}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer" wx:if="{{publishedAtLabel}}">
+    <text class="published-at">最新发布：{{publishedAtLabel}}</text>
+  </view>
+</view>
+
+<view class="loading-page" wx:else>
+  <t-loading theme="circular" size="40rpx" text="正在验证身份…" />
+</view>
