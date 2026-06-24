@@ -8,6 +8,7 @@ const DEFAULT_SHIFTS = [
   {
     code: 'D',
     name: '白班',
+    kind: 'day' as const,
     startTime: '08:00:00',
     durationMinutes: 480,
     color: '#4CAF50',
@@ -17,6 +18,7 @@ const DEFAULT_SHIFTS = [
   {
     code: 'E',
     name: '小夜班',
+    kind: 'evening' as const,
     startTime: '16:00:00',
     durationMinutes: 480,
     color: '#FF9800',
@@ -26,8 +28,9 @@ const DEFAULT_SHIFTS = [
   {
     code: 'N',
     name: '大夜班',
-    startTime: '00:00:00',
-    durationMinutes: 480,
+    kind: 'night' as const,
+    startTime: '20:00:00',
+    durationMinutes: 720,
     color: '#3F51B5',
     minRequiredCount: 2,
     sortOrder: 3,
@@ -35,6 +38,7 @@ const DEFAULT_SHIFTS = [
   {
     code: 'OFF',
     name: '休息',
+    kind: 'off' as const,
     startTime: null,
     durationMinutes: null,
     color: '#9E9E9E',
@@ -44,6 +48,7 @@ const DEFAULT_SHIFTS = [
   {
     code: 'SB',
     name: '备班',
+    kind: 'standby' as const,
     startTime: null,
     durationMinutes: null,
     color: '#795548',

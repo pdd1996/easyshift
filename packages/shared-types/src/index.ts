@@ -15,6 +15,13 @@ export type BindingCodeStatus = 'active' | 'used' | 'expired';
 
 export type ShiftTypeStatus = 'active' | 'inactive';
 
+export type { ShiftTypeKind } from './shift-type-kind.js';
+export {
+  SHIFT_TYPE_KINDS,
+  SHIFT_TYPE_KIND_LABELS,
+  inferShiftTypeKindFromCode,
+} from './shift-type-kind.js';
+
 export interface ApiErrorBody {
   error: {
     code: string;
@@ -34,10 +41,13 @@ export interface AdminUserDto {
   role: 'admin';
 }
 
+import type { ShiftTypeKind } from './shift-type-kind.js';
+
 export interface ShiftTypeDto {
   id: number;
   code: string;
   name: string;
+  kind: ShiftTypeKind;
   startTime: string | null;
   durationMinutes: number | null;
   color: string;

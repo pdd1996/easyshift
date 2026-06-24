@@ -96,6 +96,9 @@ export const shiftTypes = mysqlTable(
     color: varchar('color', { length: 20 }).notNull(),
     minRequiredCount: int('min_required_count', { unsigned: true }).notNull().default(0),
     status: mysqlEnum('status', ['active', 'inactive']).notNull().default('active'),
+    kind: mysqlEnum('kind', ['day', 'evening', 'night', 'off', 'standby', 'other'])
+      .notNull()
+      .default('other'),
     sortOrder: int('sort_order').notNull().default(0),
     createdAt: datetime('created_at', { mode: 'string' })
       .notNull()

@@ -58,6 +58,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('publish API (AC-07)', () => {
       body: JSON.stringify({
         code: `P${runSuffix}`,
         name: '发布测试白班',
+        kind: 'day',
         startTime: '08:00:00',
         durationMinutes: 480,
         color: '#4CAF50',

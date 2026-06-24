@@ -56,6 +56,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('schedule API', () => {
       body: JSON.stringify({
         code: `S${runSuffix}`,
         name: '排班测试白班',
+        kind: 'day',
         startTime: '08:00:00',
         durationMinutes: 480,
         color: '#4CAF50',

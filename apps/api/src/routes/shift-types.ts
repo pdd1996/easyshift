@@ -16,9 +16,12 @@ const timeStringSchema = z
   .optional()
   .nullable();
 
+const shiftTypeKindSchema = z.enum(['day', 'evening', 'night', 'off', 'standby', 'other']);
+
 const shiftTypeBodySchema = z.object({
   code: z.string().trim().min(1).max(10),
   name: z.string().trim().min(1).max(50),
+  kind: shiftTypeKindSchema,
   startTime: timeStringSchema,
   durationMinutes: z.number().int().min(0).optional().nullable(),
   color: z

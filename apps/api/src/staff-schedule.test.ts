@@ -86,6 +86,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('staff schedule API (AC-11, AC-12)'
       body: JSON.stringify({
         code: `SS${runSuffix}`,
         name: '员工端白班',
+        kind: 'day',
         startTime: '08:00:00',
         durationMinutes: 480,
         color: '#4CAF50',
@@ -103,6 +104,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('staff schedule API (AC-11, AC-12)'
       body: JSON.stringify({
         code: `OF${runSuffix}`,
         name: '休息',
+        kind: 'off',
         startTime: null,
         durationMinutes: null,
         color: '#9E9E9E',

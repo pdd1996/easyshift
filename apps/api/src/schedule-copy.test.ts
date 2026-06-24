@@ -61,6 +61,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('schedule copy API (AC-04)', () => 
       body: JSON.stringify({
         code: `C${runSuffix}`,
         name: '复制测试白班',
+        kind: 'day',
         startTime: '08:00:00',
         durationMinutes: 480,
         color: '#4CAF50',

@@ -6,6 +6,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Select,
   Space,
   Table,
   Tag,
@@ -25,6 +26,8 @@ import {
   useShiftTypes,
   useUpdateShiftType,
   type ShiftTypeFormValues,
+  SHIFT_TYPE_KIND_LABELS,
+  SHIFT_TYPE_KINDS,
 } from './api';
 
 type FormMode = 'create' | 'edit';
@@ -62,6 +65,7 @@ export function ShiftTypesPage() {
     form.resetFields();
     form.setFieldsValue({
       color: '#4CAF50',
+      kind: 'day',
       minRequiredCount: 0,
       sortOrder: (data?.length ?? 0) + 1,
     });
@@ -74,6 +78,7 @@ export function ShiftTypesPage() {
     form.setFieldsValue({
       code: shiftType.code,
       name: shiftType.name,
+      kind: shiftType.kind,
       startTimePicker: parseStartTime(shiftType.startTime),
       durationMinutes: shiftType.durationMinutes,
       color: shiftType.color,
@@ -89,6 +94,7 @@ export function ShiftTypesPage() {
     const payload: ShiftTypeFormValues = {
       code: values.code,
       name: values.name,
+      kind: values.kind,
       startTime: formatStartTime(values.startTimePicker ?? null),
       durationMinutes: values.durationMinutes ?? null,
       color: typeof values.color === 'string' ? values.color : String(values.color),
@@ -145,6 +151,12 @@ export function ShiftTypesPage() {
       ),
     },
     { title: '名称', dataIndex: 'name', width: 120 },
+    {
+      title: '规则类型',
+      dataIndex: 'kind',
+      width: 120,
+      render: (kind: ShiftTypeDto['kind']) => SHIFT_TYPE_KIND_LABELS[kind],
+    },
     {
       title: '时间段',
       key: 'timeRange',
@@ -205,7 +217,7 @@ export function ShiftTypesPage() {
             班次类型
           </Typography.Title>
           <Typography.Paragraph type="secondary" className="!mb-0">
-            配置本科室班次模板，含时间段、颜色与最低覆盖人数
+            配置本科室班次模板；代码/名称可按习惯显示，规则类型决定排班校验语义
           </Typography.Paragraph>
         </div>
         <Button type="primary" onClick={openCreate}>
@@ -236,14 +248,27 @@ export function ShiftTypesPage() {
             name="code"
             rules={[{ required: true, message: '请输入班次代码' }]}
           >
-            <Input placeholder="如 D、N、OFF" maxLength={10} />
+            <Input placeholder="如 D、N、白、夜、DAY" maxLength={10} />
           </Form.Item>
           <Form.Item
             label="名称"
             name="name"
             rules={[{ required: true, message: '请输入班次名称' }]}
           >
-            <Input placeholder="如 白班、大夜班" maxLength={50} />
+            <Input placeholder="如 白班、大夜班、Day Shift" maxLength={50} />
+          </Form.Item>
+          <Form.Item
+            label="规则类型"
+            name="kind"
+            rules={[{ required: true, message: '请选择规则类型' }]}
+            extra="决定连续大夜、大夜后白班等校验；与显示用的代码/名称无关"
+          >
+            <Select
+              options={SHIFT_TYPE_KINDS.map((kind) => ({
+                value: kind,
+                label: SHIFT_TYPE_KIND_LABELS[kind],
+              }))}
+            />
           </Form.Item>
           <Form.Item label="开始时间" name="startTimePicker">
             <TimePicker format="HH:mm" className="w-full" allowClear />

@@ -3,7 +3,8 @@ import { and, asc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { employees, scheduleEntries } from '../../db/schema/index.js';
 import { listShiftTypes } from '../shift-type.js';
-import { buildCoverageWarnings, computeDailyCoverage } from './coverage.js';
+import { computeDailyCoverage } from './coverage.js';
+import { buildScheduleWarnings } from './warnings.js';
 import { getPeriodRow } from './period.js';
 
 function toEmployeeDto(row: typeof employees.$inferSelect): EmployeeDto {
@@ -74,7 +75,12 @@ export async function getScheduleGrid(
   const shiftTypeList = await listShiftTypes(departmentId);
   const activeShiftTypes = shiftTypeList.filter((shiftType) => shiftType.status === 'active');
   const dailyCoverage = computeDailyCoverage(periodRow.weekStart, activeShiftTypes, entries);
-  const warnings = buildCoverageWarnings(dailyCoverage);
+  const warnings = buildScheduleWarnings({
+    weekStart: periodRow.weekStart,
+    shiftTypes: shiftTypeList,
+    entries,
+    employees: gridEmployees,
+  });
 
   return {
     period: {

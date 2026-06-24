@@ -1,4 +1,4 @@
-import type { ScheduleEntryDto } from '@easyshift/shared-types';
+import type { ScheduleEntryDto, ShiftTypeDto } from '@easyshift/shared-types';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import {
@@ -12,7 +12,8 @@ import {
 } from '../../db/schema/index.js';
 import { nowShanghaiDatetime } from '../../lib/datetime.js';
 import { AppError } from '../../lib/errors.js';
-import { buildCoverageWarnings, computeDailyCoverage } from './coverage.js';
+import { computeDailyCoverage } from './coverage.js';
+import { buildScheduleWarnings } from './warnings.js';
 import { buildNotificationText } from './notification-text.js';
 import type { SnapshotData, SnapshotEmployee } from './snapshot-types.js';
 
@@ -52,7 +53,10 @@ async function buildSnapshotData(
   period: typeof schedulePeriods.$inferSelect,
   version: number,
   publishedAt: string,
-): Promise<SnapshotData> {
+): Promise<{
+  snapshotData: SnapshotData;
+  shiftTypesForValidation: ShiftTypeDto[];
+}> {
   const entryRows = await tx
     .select()
     .from(scheduleEntries)
@@ -104,46 +108,59 @@ async function buildSnapshotData(
     .where(eq(shiftTypes.departmentId, departmentId))
     .orderBy(asc(shiftTypes.sortOrder), asc(shiftTypes.id));
 
-  const snapshotShiftTypes = shiftTypeRows
-    .filter(
-      (row) => row.status === 'active' || entryShiftTypeIds.includes(row.id),
-    )
+  const shiftTypesForValidation: ShiftTypeDto[] = shiftTypeRows
+    .filter((row) => row.status === 'active' || entryShiftTypeIds.includes(row.id))
     .map((row) => ({
       id: row.id,
       code: row.code,
       name: row.name,
+      kind: row.kind,
       startTime: row.startTime,
       durationMinutes: row.durationMinutes,
       color: row.color,
       minRequiredCount: row.minRequiredCount,
+      status: row.status,
+      sortOrder: row.sortOrder,
     }));
 
-  const activeShiftTypesForCoverage = snapshotShiftTypes.filter((shiftType) =>
-    shiftTypeRows.find((row) => row.id === shiftType.id && row.status === 'active'),
+  const snapshotShiftTypes = shiftTypesForValidation.map(
+    ({ id, code, name, kind, startTime, durationMinutes, color, minRequiredCount }) => ({
+      id,
+      code,
+      name,
+      kind,
+      startTime,
+      durationMinutes,
+      color,
+      minRequiredCount,
+    }),
+  );
+
+  const activeShiftTypesForCoverage = shiftTypesForValidation.filter(
+    (shiftType) => shiftType.status === 'active',
   );
 
   const dailyCoverage = computeDailyCoverage(
     period.weekStart,
-    activeShiftTypesForCoverage.map((shiftType) => ({
-      ...shiftType,
-      status: 'active' as const,
-      sortOrder: 0,
-    })),
+    activeShiftTypesForCoverage,
     entries,
   );
 
   return {
-    meta: {
-      departmentId,
-      departmentName,
-      weekStart: period.weekStart,
-      version,
-      publishedAt,
+    snapshotData: {
+      meta: {
+        departmentId,
+        departmentName,
+        weekStart: period.weekStart,
+        version,
+        publishedAt,
+      },
+      shiftTypes: snapshotShiftTypes,
+      employees: snapshotEmployees,
+      entries,
+      dailyCoverage,
     },
-    shiftTypes: snapshotShiftTypes,
-    employees: snapshotEmployees,
-    entries,
-    dailyCoverage,
+    shiftTypesForValidation,
   };
 }
 
@@ -183,7 +200,7 @@ export async function publishPeriod(
       const nextVersion = (period.latestPublishedVersion ?? 0) + 1;
       const { mysql: publishedAtMysql, iso: publishedAtIso } = nowShanghaiDatetime();
 
-      const snapshotData = await buildSnapshotData(
+      const { snapshotData, shiftTypesForValidation } = await buildSnapshotData(
         tx,
         departmentId,
         department.name,
@@ -191,9 +208,22 @@ export async function publishPeriod(
         nextVersion,
         publishedAtIso,
       );
-      const warnings = buildCoverageWarnings(snapshotData.dailyCoverage);
+      const warnings = buildScheduleWarnings({
+        weekStart: period.weekStart,
+        shiftTypes: shiftTypesForValidation,
+        entries: snapshotData.entries,
+        employees: snapshotData.employees.map((employee) => ({
+          id: employee.id,
+          employeeNo: employee.employeeNo,
+          name: employee.name,
+          title: employee.title,
+          phone: '',
+          status: 'active' as const,
+        })),
+        dailyCoverage: snapshotData.dailyCoverage,
+      });
       if (warnings.length > 0 && !options.acknowledgeWarnings) {
-        throw new AppError(422, 'UNACKNOWLEDGED_WARNINGS', '存在覆盖不足警告，请确认后继续发布', {
+        throw new AppError(422, 'UNACKNOWLEDGED_WARNINGS', '存在排班警告，请确认后继续发布', {
           warnings,
         });
       }
