@@ -1,4 +1,7 @@
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+
+dayjs.extend(utc);
 
 export type UserRole = 'admin' | 'staff';
 
@@ -104,16 +107,20 @@ export interface StaffScheduleDayDto {
   note: string | null;
 }
 
+export interface StaffScheduleDto {
+  weekStart: string;
+  publishedAt: string | null;
+  version: number | null;
+  status?: 'not_published';
+  days: StaffScheduleDayDto[];
+}
+
 /** 计算 date 所在周的周一（Asia/Shanghai 日历日） */
 export function weekStartFromDate(date: Date): string {
-  const d = new Date(date);
-  const day = d.getDay();
+  const shanghai = dayjs(date).utcOffset(8);
+  const day = shanghai.day();
   const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dayNum = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dayNum}`;
+  return shanghai.add(diff, 'day').format('YYYY-MM-DD');
 }
 
 export function isMonday(dateStr: string): boolean {

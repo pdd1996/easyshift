@@ -11,3 +11,9 @@ export function getWeekDates(weekStart: string): string[] {
 export function isDateInWeek(workDate: string, weekStart: string): boolean {
   return getWeekDates(weekStart).includes(workDate);
 }
+
+/** ISO weekday: Monday = 1, Sunday = 7 */
+export function isoWeekday(workDate: string): number {
+  const weekday = dayjs(workDate).day();
+  return weekday === 0 ? 7 : weekday;
+}

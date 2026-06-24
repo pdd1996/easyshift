@@ -36,3 +36,9 @@ export function adminHeaders(cookie: string): Record<string, string> {
     Cookie: cookie,
   };
 }
+
+export function staffHeaders(token: string): Record<string, string> {
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, getWeekDates, isDateInWeek } from './date-utils.js';
+import { addDays, getWeekDates, isDateInWeek, isoWeekday } from './date-utils.js';
 
 describe('schedule date utils', () => {
   it('treats YYYY-MM-DD values as date-only calendar days', () => {
@@ -24,5 +24,10 @@ describe('schedule date utils', () => {
     expect(isDateInWeek('2026-06-22', '2026-06-22')).toBe(true);
     expect(isDateInWeek('2026-06-28', '2026-06-22')).toBe(true);
     expect(isDateInWeek('2026-06-29', '2026-06-22')).toBe(false);
+  });
+
+  it('returns ISO weekday with Monday as 1 and Sunday as 7', () => {
+    expect(isoWeekday('2026-06-22')).toBe(1);
+    expect(isoWeekday('2026-06-28')).toBe(7);
   });
 });

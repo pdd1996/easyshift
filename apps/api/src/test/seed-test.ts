@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import mysql from 'mysql2/promise';
 import { env } from '../config/env.js';
+import { signStaffToken } from '../lib/jwt.js';
 
 const ADMIN_PHONE = '13800000000';
 const ADMIN_PASSWORD = env.SEED_ADMIN_PASSWORD;
@@ -126,6 +127,61 @@ export async function cleanupTestEmployees(employeeIds: number[]) {
       employeeIds,
     );
     await connection.execute(`DELETE FROM employees WHERE id IN (${placeholders})`, employeeIds);
+  } finally {
+    await connection.end();
+  }
+}
+
+export async function createStaffUserForEmployee(
+  employeeId: number,
+): Promise<{ userId: number; token: string }> {
+  const connection = await mysql.createConnection(env.DATABASE_URL);
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const wxOpenid = `test_openid_${employeeId}_${Date.now()}`;
+
+  try {
+    const [result] = await connection.execute(
+      `INSERT INTO users (role, employee_id, wx_openid, status, token_valid_after)
+       VALUES ('staff', ?, ?, 'active', ?)`,
+      [employeeId, wxOpenid, now],
+    );
+    const userId = Number((result as { insertId: number }).insertId);
+    const token = signStaffToken({ sub: userId, role: 'staff' });
+    return { userId, token };
+  } finally {
+    await connection.end();
+  }
+}
+
+export async function createStaffUserWithoutEmployee(): Promise<{ userId: number; token: string }> {
+  const connection = await mysql.createConnection(env.DATABASE_URL);
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const wxOpenid = `test_unbound_${Date.now()}`;
+
+  try {
+    const [result] = await connection.execute(
+      `INSERT INTO users (role, wx_openid, status, token_valid_after)
+       VALUES ('staff', ?, 'active', ?)`,
+      [wxOpenid, now],
+    );
+    const userId = Number((result as { insertId: number }).insertId);
+    const token = signStaffToken({ sub: userId, role: 'staff' });
+    return { userId, token };
+  } finally {
+    await connection.end();
+  }
+}
+
+export async function cleanupTestStaffUsers(userIds: number[]) {
+  if (userIds.length === 0) {
+    return;
+  }
+
+  const connection = await mysql.createConnection(env.DATABASE_URL);
+  const placeholders = userIds.map(() => '?').join(',');
+
+  try {
+    await connection.execute(`DELETE FROM users WHERE id IN (${placeholders})`, userIds);
   } finally {
     await connection.end();
   }

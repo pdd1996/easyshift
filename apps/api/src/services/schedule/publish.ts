@@ -1,4 +1,4 @@
-import type { DailyCoverageItemDto, ScheduleEntryDto } from '@easyshift/shared-types';
+import type { ScheduleEntryDto } from '@easyshift/shared-types';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import {
@@ -14,6 +14,7 @@ import { nowShanghaiDatetime } from '../../lib/datetime.js';
 import { AppError } from '../../lib/errors.js';
 import { buildCoverageWarnings, computeDailyCoverage } from './coverage.js';
 import { buildNotificationText } from './notification-text.js';
+import type { SnapshotData, SnapshotEmployee } from './snapshot-types.js';
 
 export interface PublishResult {
   version: number;
@@ -23,37 +24,6 @@ export interface PublishResult {
 
 export interface PublishOptions {
   acknowledgeWarnings?: boolean;
-}
-
-interface SnapshotShiftType {
-  id: number;
-  code: string;
-  name: string;
-  startTime: string | null;
-  durationMinutes: number | null;
-  color: string;
-  minRequiredCount: number;
-}
-
-interface SnapshotEmployee {
-  id: number;
-  employeeNo: string;
-  name: string;
-  title: string | null;
-}
-
-interface SnapshotData {
-  meta: {
-    departmentId: number;
-    departmentName: string;
-    weekStart: string;
-    version: number;
-    publishedAt: string;
-  };
-  shiftTypes: SnapshotShiftType[];
-  employees: SnapshotEmployee[];
-  entries: ScheduleEntryDto[];
-  dailyCoverage: DailyCoverageItemDto[];
 }
 
 function isDuplicateEntryError(error: unknown): boolean {
