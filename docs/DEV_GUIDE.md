@@ -78,6 +78,14 @@ Web 端可选 `apps/web/.env.local`：
 |------|------|------|
 | `VITE_API_BASE_URL` | API 根路径 | `http://localhost:3000/api/v1` |
 
+Web dev/prod 切换只依赖 `VITE_API_BASE_URL`：
+
+- 本地开发：`VITE_API_BASE_URL=http://localhost:3000/api/v1`
+- 生产同域反代（推荐）：`VITE_API_BASE_URL=/api/v1`
+- 生产分域部署：`VITE_API_BASE_URL=https://api.example.com/api/v1`，同时 API 需配置 `CORS_ORIGIN=https://web.example.com` 与 `COOKIE_SECURE=true`
+
+Vite 生产构建会读取 `apps/web/.env.production` / `apps/web/.env.production.local`，但线上更推荐在部署平台配置 `VITE_API_BASE_URL`。所有 `VITE_*` 变量都是构建时注入，修改线上变量后需要重新 build / redeploy。真实生产配置不要提交到仓库，使用 `.env.production.local` 或部署平台变量。
+
 小程序 `apps/miniapp/config/dev.ts`（或环境配置）：
 
 | 变量 | 说明 |
