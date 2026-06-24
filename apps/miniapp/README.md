@@ -33,13 +33,18 @@ pnpm miniapp:install
 4. **工具 → 构建 npm**（安装 TDesign 后必须执行）
 5. 将 `config/dev.ts` 中的 `apiBaseUrl` 指向 `http://localhost:3000/api/v1`
 
-### 3. 深色模式调试
+### 3. 项目配置文件
+
+- `project.config.json` 是仓库共享配置，必须保留并提交；不要写入个人测试号 AppID 或微信开发者工具生成的本机设置。
+- `project.private.config.json` 用于本机配置（如真实 AppID、个人开发者工具设置），已被 `.gitignore` 忽略，不应提交。
+
+### 4. 深色模式调试
 
 1. 确保 `app.json` 已配置 `"darkmode": true`
 2. 在模拟器顶部切换「深色 / 浅色」预览
 3. 发版前在真机（系统或微信开启深色模式）验收绑定页与班表页
 
-### 4. 联调流程
+### 5. 联调流程
 
 Web 端为员工生成绑定码 → 小程序输入绑定码 + 手机号后四位 → 查看班表。
 
