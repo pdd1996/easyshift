@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.0 |
+| 文档版本 | v1.2 |
 | 关联文档 | [PRD.md](./PRD.md) · [DATABASE.md](./DATABASE.md) · [SECURITY.md](./SECURITY.md) |
 
 ---
@@ -309,6 +309,7 @@
 {
   "code": "D",
   "name": "白班",
+  "kind": "day",
   "startTime": "08:00:00",
   "durationMinutes": 480,
   "color": "#4CAF50",
@@ -317,9 +318,11 @@
 }
 ```
 
+`kind` 为规则语义字段（`day` / `evening` / `night` / `off` / `standby` / `other`），决定排班校验如何识别大夜、白班等；`code` / `name` 可按科室习惯自由显示（中文、英文均可）。
+
 ### PUT `/shift-types/:id`
 
-更新（被历史引用时不可删，只能停用）。
+更新（被历史引用时不可删，只能停用）。请求体字段同 POST，含必填 `kind`。
 
 ### POST `/shift-types/:id/deactivate`
 
@@ -377,6 +380,8 @@ Web 排班表整表数据。
 }
 ```
 
+`warnings` 与 [`GET /validation`](#get-scheduleperiodsperiodidvalidation) 使用同一套规则，见下方「排班警告代码」。
+
 ---
 
 ### PUT `/schedule/periods/:periodId/entries`
@@ -431,7 +436,7 @@ Web 排班表整表数据。
 
 ### GET `/schedule/periods/:periodId/validation`
 
-校验警告摘要（不阻断，供发布弹窗展示）。
+校验警告摘要（不阻断保存，供「检查排班」与发布弹窗展示）。
 
 **响应**：
 
@@ -444,12 +449,35 @@ Web 排班表整表数据。
         "code": "COVERAGE_BELOW_MIN",
         "workDate": "2026-06-22",
         "shiftTypeId": 1,
-        "message": "白班仅 2 人，低于最低 3 人"
+        "message": "D 仅 2 人，低于最低 3 人"
+      },
+      {
+        "code": "CONSECUTIVE_NIGHT",
+        "workDate": "2026-06-22",
+        "message": "张三 连续 3 天大夜班（06-22–06-24），超过上限 2 天"
+      },
+      {
+        "code": "REST_VIOLATION",
+        "workDate": "2026-06-23",
+        "shiftTypeId": 1,
+        "message": "张三 在大夜班（06-22）结束后 0 小时内又排白班（06-23）"
       }
     ]
   }
 }
 ```
+
+#### 排班警告代码
+
+v1 软警告均不阻断保存；发布时若存在任意 warning，需传 `acknowledgeWarnings: true` 确认。
+
+| code | PRD | 说明 |
+|------|-----|------|
+| `COVERAGE_BELOW_MIN` | WEB-VAL-04 | 某天某班次已排人数低于 `minRequiredCount` |
+| `CONSECUTIVE_NIGHT` | WEB-VAL-03 | 员工连续大夜班（`kind = night`）超过 2 天（默认阈值 2，即 3 天连排才警告） |
+| `REST_VIOLATION` | WEB-VAL-02 | 大夜班（`kind = night`）结束后 24 小时内又排白班（`kind = day`） |
+
+`errors` 数组保留供未来硬错误扩展；v1 同天双班（WEB-VAL-01）在保存时以 `409 SCHEDULE_ENTRY_CONFLICT` 返回，不走此接口。
 
 ---
 
@@ -465,7 +493,7 @@ Web 排班表整表数据。
 
 发布本周期。事务内：锁定 period → 递增 version → 写入 snapshot → 更新 period → 写 change_log。
 
-**请求体**（可选）：`{ "acknowledgeWarnings": true }` — 存在 warnings 时需确认
+**请求体**（可选）：`{ "acknowledgeWarnings": true }` — 存在排班 warnings（覆盖不足 + 规则警告）时需确认
 
 **响应**：
 
@@ -479,7 +507,10 @@ Web 排班表整表数据。
 }
 ```
 
-**错误**：`409` 并发发布冲突（客户端可重试）。
+**错误**：
+
+- `422 UNACKNOWLEDGED_WARNINGS`：存在排班 warnings 且未传 `acknowledgeWarnings: true`；`error.details.warnings` 含完整警告列表
+- `409 PUBLISH_CONFLICT`：并发发布冲突（客户端可重试）
 
 ---
 
@@ -566,7 +597,9 @@ Web 排班表整表数据。
 | `UserRole` | `admin` \| `staff` |
 | `EmployeeStatus` | `active` \| `inactive` |
 | `PeriodEditStatus` | `draft` \| `published` |
-| `ShiftTypeDto` | 班次类型 API 形状 |
+| `ShiftTypeKind` | `day` \| `evening` \| `night` \| `off` \| `standby` \| `other` — 规则语义 |
+| `SHIFT_TYPE_KIND_LABELS` | kind 中文展示标签（管理端） |
+| `ShiftTypeDto` | 班次类型 API 形状（含 `kind`；`code`/`name` 为展示字段） |
 | `ScheduleEntryDto` | 排班条目 |
 | `ScheduleGridDto` | 整表响应 |
 | `StaffScheduleDayDto` | 员工端单日班表 |
@@ -587,4 +620,6 @@ v1 以本文档 + `shared-types` 为契约源。实现稳定后可导出 `docs/o
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.2 | 2026-06-24 | 班次类型新增 `kind` 规则语义字段；排班 warnings 基于 kind 而非 code |
+| v1.1 | 2026-06-24 | 补充排班 warnings 代码表（WEB-VAL-02～04）、发布 `UNACKNOWLEDGED_WARNINGS` 说明 |
 | v1.0 | 2026-06-23 | 初版 REST 契约 |

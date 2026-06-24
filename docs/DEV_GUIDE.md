@@ -86,8 +86,42 @@ Web 端可选 `apps/web/.env.local`：
 ### 2.4 数据库迁移与种子
 
 ```bash
-pnpm db:migrate    # drizzle-kit migrate，应用 migration
-pnpm db:seed       # 写入：单科室、初始管理员、默认班次类型
+pnpm db:migrate    # drizzle-kit migrate，应用 migration（含 0002 shift_type_kind）
+pnpm db:seed       # 写入：单科室、初始管理员、默认班次类型（含 kind）
+```
+
+已有库升级：执行 `db:migrate` 后为 `shift_types` 增加 `kind` 并回填；集成测试使用的 `easyshift_test` 库也需单独迁移。
+
+若本地集成测试报 `Unknown column 'kind' in 'field list'`，通常是 `easyshift_dev` 已迁移但 `easyshift_test` 未同步。可在 MySQL 中对 `easyshift_test` 执行 `apps/api/drizzle/0002_shift_type_kind.sql`；若只需手动补字段，使用以下 SQL：
+
+```sql
+USE easyshift_test;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE shift_types ADD COLUMN kind ENUM(''day'',''evening'',''night'',''off'',''standby'',''other'') NOT NULL DEFAULT ''other''',
+    'SELECT 1'
+  )
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'shift_types'
+    AND COLUMN_NAME = 'kind'
+);
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+UPDATE shift_types
+SET kind = CASE
+  WHEN UPPER(code) IN ('D', 'DAY') OR code IN ('白', '日') OR name IN ('白班', '日班') THEN 'day'
+  WHEN UPPER(code) IN ('E', 'EVENING') OR name IN ('小夜班') THEN 'evening'
+  WHEN UPPER(code) IN ('N', 'NIGHT') OR code IN ('夜') OR name IN ('大夜班', '夜班', 'Night Shift') THEN 'night'
+  WHEN UPPER(code) IN ('OFF', 'REST') OR code IN ('休') OR name IN ('休息', '休班') THEN 'off'
+  WHEN UPPER(code) IN ('SB', 'STANDBY') OR code IN ('备') OR name IN ('备班', '待命') THEN 'standby'
+  ELSE kind
+END;
 ```
 
 种子数据默认管理员（**仅开发环境**，生产部署后必须修改）：
