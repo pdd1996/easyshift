@@ -18,7 +18,7 @@
 ## 技术栈（v1）
 
 - **Web**：React + TypeScript + Vite + Ant Design + Tailwind CSS
-- **小程序**：微信原生 + TypeScript
+- **小程序**：微信原生 + TypeScript + TDesign Miniprogram（深色模式）
 - **API**：Hono + Drizzle + MySQL 8
 - **Monorepo**：pnpm workspace
 

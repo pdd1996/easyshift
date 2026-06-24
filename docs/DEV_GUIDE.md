@@ -141,11 +141,30 @@ pnpm dev:web       # 仅 Web
 
 ## 3. 小程序联调
 
+### 3.1 环境与依赖
+
 1. 用微信开发者工具打开 `apps/miniapp`。
-2. 填写小程序 AppID（测试号亦可）。
-3. **详情 → 本地设置**：勾选「不校验合法域名、web-view、TLS 版本」。
-4. 确保 `apiBaseUrl` 指向本机 API（如 `http://localhost:3000/api/v1`）。
-5. 绑定流程：Web 端为员工生成绑定码 → 小程序输入绑定码 + 手机号后四位。
+2. 安装小程序 UI 依赖并构建 npm：
+
+   ```bash
+   pnpm miniapp:install
+   ```
+
+   微信开发者工具 → **工具 → 构建 npm**。
+
+3. 填写小程序 AppID（测试号亦可）。
+4. **详情 → 本地设置**：勾选「不校验合法域名、web-view、TLS 版本」。
+5. 确保 `apiBaseUrl` 指向本机 API（如 `http://localhost:3000/api/v1`）。
+
+### 3.2 深色模式
+
+- `app.json` 配置 `"darkmode": true`；导航栏等原生样式见 `theme.json`。
+- 开发者工具模拟器顶部可切换「深色 / 浅色」调试。
+- 自定义页面样式使用 TDesign 的 `--td-*` 变量，详见 [TECH_STACK.md](./TECH_STACK.md) §3.2。
+
+### 3.3 绑定流程
+
+Web 端为员工生成绑定码 → 小程序输入绑定码 + 手机号后四位。
 
 本地调试微信 `code2session` 时，API 可配置 `WX_MOCK=true` 使用假 openid（仅 development）。
 
