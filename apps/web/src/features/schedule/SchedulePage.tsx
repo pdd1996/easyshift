@@ -1,32 +1,66 @@
 import { weekStartFromDate } from '@easyshift/shared-types';
 import { Alert, App, Button, Empty, Space, Spin, Tag, Typography, message } from 'antd';
+import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   getApiErrorMessage,
   useCreatePeriod,
   useDeleteEntry,
+  usePublishPeriod,
   useScheduleGrid,
   useSchedulePeriods,
   useUpsertEntries,
+  useValidatePeriod,
 } from './api';
 import { DailyCoverageRow } from './components/DailyCoverageRow';
 import { ScheduleGrid } from './components/ScheduleGrid';
 import { addWeeks, formatWeekRange } from './utils';
 
+function formatPublishedAt(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+  return dayjs(value).format('YYYY-MM-DD HH:mm');
+}
+
 function PeriodStatusTags({
   editStatus,
   hasUnpublishedChanges,
+  latestPublishedVersion,
+  lastPublishedAt,
 }: {
   editStatus: 'draft' | 'published';
   hasUnpublishedChanges: boolean;
+  latestPublishedVersion: number | null;
+  lastPublishedAt: string | null;
 }) {
+  const publishedAtLabel = formatPublishedAt(lastPublishedAt);
+
   if (editStatus === 'draft') {
     return <Tag color="blue">草稿</Tag>;
   }
   if (hasUnpublishedChanges) {
-    return <Tag color="orange">有未发布变更</Tag>;
+    return (
+      <Space size={4} wrap>
+        <Tag color="orange">有未发布变更</Tag>
+        {latestPublishedVersion != null && publishedAtLabel && (
+          <Typography.Text type="secondary" className="text-sm">
+            当前发布：v{latestPublishedVersion} · {publishedAtLabel}
+          </Typography.Text>
+        )}
+      </Space>
+    );
   }
-  return <Tag color="green">已发布</Tag>;
+  return (
+    <Space size={4} wrap>
+      <Tag color="green">已发布</Tag>
+      {latestPublishedVersion != null && publishedAtLabel && (
+        <Typography.Text type="secondary" className="text-sm">
+          v{latestPublishedVersion} · {publishedAtLabel}
+        </Typography.Text>
+      )}
+    </Space>
+  );
 }
 
 export function SchedulePage() {
@@ -57,6 +91,18 @@ export function SchedulePage() {
   const createPeriodMutation = useCreatePeriod();
   const upsertMutation = useUpsertEntries(currentPeriod?.id ?? 0);
   const deleteMutation = useDeleteEntry(currentPeriod?.id ?? 0);
+  const publishMutation = usePublishPeriod(currentPeriod?.id ?? 0);
+  const validationMutation = useValidatePeriod(currentPeriod?.id ?? 0);
+
+  const canPublish = useMemo(() => {
+    if (!grid?.period) {
+      return false;
+    }
+    if (grid.period.editStatus === 'draft') {
+      return true;
+    }
+    return grid.period.hasUnpublishedChanges;
+  }, [grid?.period]);
 
   useEffect(() => {
     setPublishedEditConfirmed(false);
@@ -155,7 +201,89 @@ export function SchedulePage() {
     setWarningsVisible(true);
   };
 
+  const handlePublish = async () => {
+    if (!grid?.period) {
+      return;
+    }
+
+    let validation;
+    try {
+      validation = await validationMutation.mutateAsync();
+    } catch (error) {
+      message.error(getApiErrorMessage(error, '校验失败'));
+      return;
+    }
+
+    if (validation.errors.length > 0) {
+      message.error(validation.errors[0]?.message ?? '存在排班错误，无法发布');
+      return;
+    }
+
+    const warnings = validation.warnings;
+    const hasWarnings = warnings.length > 0;
+
+    modal.confirm({
+      title: '发布本周期',
+      width: 520,
+      content: (
+        <div className="space-y-3">
+          <Typography.Paragraph className="!mb-0">
+            确认发布 {formatWeekRange(grid.period.weekStart)} 的排班？发布后员工端将读取最新快照。
+          </Typography.Paragraph>
+          {hasWarnings && (
+            <Alert
+              type="warning"
+              showIcon
+              message={`存在 ${warnings.length} 条覆盖不足警告`}
+              description={
+                <ul className="mb-0 max-h-40 list-inside list-disc overflow-y-auto">
+                  {warnings.map((w, i) => (
+                    <li key={`${w.code}-${w.workDate}-${w.shiftTypeId}-${i}`}>{w.message}</li>
+                  ))}
+                </ul>
+              }
+            />
+          )}
+        </div>
+      ),
+      okText: hasWarnings ? '确认并发布' : '确认发布',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const result = await publishMutation.mutateAsync({
+            acknowledgeWarnings: hasWarnings ? true : undefined,
+          });
+          message.success(`发布成功（v${result.version}）`);
+          if (result.notificationText) {
+            modal.info({
+              title: '发布成功',
+              width: 480,
+              content: (
+                <div className="space-y-3">
+                  <Typography.Paragraph className="!mb-0">
+                    版本 v{result.version} · {formatPublishedAt(result.publishedAt)}
+                  </Typography.Paragraph>
+                  <Typography.Paragraph
+                    className="!mb-0 whitespace-pre-wrap rounded bg-gray-50 p-3 text-sm"
+                    copyable
+                  >
+                    {result.notificationText}
+                  </Typography.Paragraph>
+                </div>
+              ),
+              okText: '知道了',
+            });
+          }
+        } catch (error) {
+          message.error(getApiErrorMessage(error, '发布失败'));
+          throw error;
+        }
+      },
+    });
+  };
+
   const isSaving = upsertMutation.isPending || deleteMutation.isPending;
+  const isPublishing = publishMutation.isPending || validationMutation.isPending;
   const isLoading = periodsLoading || (currentPeriod != null && gridLoading);
   const isCurrentWeek = weekStart === weekStartFromDate(new Date());
   const isNextWeek = weekStart === addWeeks(weekStartFromDate(new Date()), 1);
@@ -191,6 +319,8 @@ export function SchedulePage() {
             <PeriodStatusTags
               editStatus={grid.period.editStatus}
               hasUnpublishedChanges={grid.period.hasUnpublishedChanges}
+              latestPublishedVersion={grid.period.latestPublishedVersion}
+              lastPublishedAt={grid.period.lastPublishedAt}
             />
           )}
           {!currentPeriod && !periodsLoading && !periodsIsError && (
@@ -199,9 +329,19 @@ export function SchedulePage() {
         </Space>
 
         {grid && (
-          <Button onClick={handleCheckWarnings}>
-            检查覆盖{grid.warnings.length > 0 ? `（${grid.warnings.length}）` : ''}
-          </Button>
+          <Space wrap>
+            <Button onClick={handleCheckWarnings}>
+              检查覆盖{grid.warnings.length > 0 ? `（${grid.warnings.length}）` : ''}
+            </Button>
+            <Button
+              type="primary"
+              disabled={!canPublish}
+              loading={isPublishing}
+              onClick={handlePublish}
+            >
+              发布本周期
+            </Button>
+          </Space>
         )}
 
         {!currentPeriod && !periodsIsError && (

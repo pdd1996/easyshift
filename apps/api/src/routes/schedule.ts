@@ -6,6 +6,8 @@ import { validateCsrfOrigin, requireAdmin } from '../middleware/auth.js';
 import { deleteEntry, upsertEntries } from '../services/schedule/entry.js';
 import { getScheduleGrid } from '../services/schedule/grid.js';
 import { createPeriod, getPeriod, listPeriods } from '../services/schedule/period.js';
+import { publishPeriod } from '../services/schedule/publish.js';
+import { validatePeriod } from '../services/schedule/validation.js';
 import { notImplemented } from '../lib/errors.js';
 
 const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式须为 YYYY-MM-DD');
@@ -33,6 +35,10 @@ const upsertEntriesBodySchema = z.object({
 const deleteEntryBodySchema = z.object({
   employeeId: z.number().int().positive(),
   workDate: dateStringSchema,
+});
+
+const publishBodySchema = z.object({
+  acknowledgeWarnings: z.boolean().optional(),
 });
 
 export const scheduleRoutes = new Hono();
@@ -124,13 +130,48 @@ scheduleRoutes.post('/periods/:periodId/copy-from-previous-week', async (c) => {
   await validateCsrfOrigin(c);
   notImplemented('POST /schedule/periods/:periodId/copy-from-previous-week');
 });
-scheduleRoutes.get('/periods/:periodId/validation', async () =>
-  notImplemented('GET /schedule/periods/:periodId/validation'),
-);
+scheduleRoutes.get('/periods/:periodId/validation', async (c) => {
+  const periodId = parsePeriodId(c.req.param('periodId'));
+  if (periodId === null) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: '无效的排班周期 ID' } }, 400);
+  }
+
+  const department = await getDefaultDepartment();
+  const data = await validatePeriod(department.id, periodId);
+  return c.json({ data });
+});
 scheduleRoutes.get('/periods/:periodId/stats', async () => notImplemented('GET /schedule/periods/:periodId/stats'));
 scheduleRoutes.post('/periods/:periodId/publish', async (c) => {
   await validateCsrfOrigin(c);
-  notImplemented('POST /schedule/periods/:periodId/publish');
+  const periodId = parsePeriodId(c.req.param('periodId'));
+  if (periodId === null) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: '无效的排班周期 ID' } }, 400);
+  }
+
+  let options: { acknowledgeWarnings?: boolean } = {};
+  const contentType = c.req.header('content-type');
+  if (contentType?.includes('application/json')) {
+    const rawBody = await c.req.text();
+    let jsonBody: unknown = {};
+    if (rawBody.trim() !== '') {
+      try {
+        jsonBody = JSON.parse(rawBody) as unknown;
+      } catch {
+        return c.json({ error: { code: 'VALIDATION_ERROR', message: '请求体格式无效' } }, 400);
+      }
+    }
+
+    const parsed = publishBodySchema.safeParse(jsonBody);
+    if (!parsed.success) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: '请求体格式无效' } }, 400);
+    }
+    options = parsed.data;
+  }
+
+  const department = await getDefaultDepartment();
+  const authUser = c.get('authUser');
+  const data = await publishPeriod(department.id, periodId, authUser.id, options);
+  return c.json({ data });
 });
 scheduleRoutes.get('/periods/:periodId/notification-text', async () =>
   notImplemented('GET /schedule/periods/:periodId/notification-text'),
