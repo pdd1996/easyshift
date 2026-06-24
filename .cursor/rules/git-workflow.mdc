@@ -1,0 +1,45 @@
+---
+description: Safe Git workflow for commits, PRs, merges, and branch cleanup
+alwaysApply: true
+---
+
+# Safe Git Workflow
+
+When asked to commit, push, create PRs, merge, or delete branches, follow this checklist exactly.
+
+## Before Committing
+
+- Run `git status --short --branch`, `git diff`, and recent `git log` before staging.
+- Do not use `git add .`; stage only explicit files or well-scoped pathspecs.
+- Before committing, show/verify `git diff --cached --name-only` and `git diff --cached --stat`.
+- Do not include unrelated untracked files, generated test result files, `.env`, credentials, or secrets.
+- Use the repository's commit message style and commit only after the user explicitly asks.
+
+## Branch And PR Rules
+
+- Keep each PR focused on one reviewable purpose.
+- If PRs are stacked, state the dependency clearly, for example: docs PR depends on code PR.
+- Do not delete any local or remote feature branch until its target commit is confirmed on `main`.
+- Prefer PR merge order that matches dependencies: foundation/code PR first, dependent docs or follow-up PR second.
+
+## After PR Merge
+
+- Run `git switch main` and `git pull`.
+- Confirm the expected commits are on `main` with:
+  - `git log --oneline -5`
+  - `git merge-base --is-ancestor <commit> main`
+- Treat `git pull` saying "Already up to date" as insufficient unless the expected commit is visible on `main`.
+
+## Before Deleting Branches
+
+- Confirm current branch with `git status --short --branch`.
+- Confirm local and remote branches with `git branch -vv` and `git branch -r`.
+- Delete local branches only when not currently checked out.
+- Delete remote branches only after confirming PRs are merged and expected commits are on `main`.
+- If deletion fails or warns, stop and explain the state before running further cleanup.
+
+## Recovery
+
+- If a branch or remote branch was deleted too early, do not rewrite history.
+- First inspect `git reflog --all`, `git branch -a`, and `git cat-file -t <commit>`.
+- Recover with `git checkout -b <branch> <commit>` or `git branch <branch> <commit>`, then push normally.
