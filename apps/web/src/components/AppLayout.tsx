@@ -1,5 +1,5 @@
 import { Layout, Menu, Typography, Button } from 'antd';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { logoutAdmin, useAdminSession } from '@/features/auth/api';
 
@@ -7,8 +7,18 @@ const { Header, Sider, Content } = Layout;
 
 export function AppLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { data: session } = useAdminSession();
+
+  const selectedKey =
+    location.pathname === '/employees'
+      ? 'employees'
+      : location.pathname.startsWith('/schedule')
+        ? 'schedule'
+        : location.pathname.startsWith('/shift-types')
+          ? 'shifts'
+          : 'dashboard';
 
   const logoutMutation = useMutation({
     mutationFn: logoutAdmin,
@@ -29,10 +39,14 @@ export function AppLayout() {
         </div>
         <Menu
           mode="inline"
-          selectedKeys={['dashboard']}
+          selectedKeys={[selectedKey]}
+          onClick={({ key }) => {
+            if (key === 'dashboard') navigate('/');
+            if (key === 'employees') navigate('/employees');
+          }}
           items={[
             { key: 'dashboard', label: '工作台' },
-            { key: 'employees', label: '员工管理', disabled: true },
+            { key: 'employees', label: '员工管理' },
             { key: 'shifts', label: '班次类型', disabled: true },
             { key: 'schedule', label: '排班表', disabled: true },
           ]}
