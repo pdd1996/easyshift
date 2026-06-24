@@ -31,6 +31,7 @@ export default defineConfig({
     env: {
       DATABASE_URL: resolveTestDatabaseUrl(),
       JWT_SECRET: 'test-jwt-secret-at-least-32-characters-long',
+      WX_MOCK: 'true',
     },
   },
 });
