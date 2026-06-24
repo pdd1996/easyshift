@@ -1,4 +1,9 @@
-import type { DailyCoverageItemDto, EmployeeDto, ShiftTypeDto } from '@easyshift/shared-types';
+import type {
+  DailyCoverageItemDto,
+  EmployeeDto,
+  ScheduleEntryDto,
+  ShiftTypeDto,
+} from '@easyshift/shared-types';
 import dayjs from 'dayjs';
 import type { PeriodDto } from '@/features/schedule/api';
 
@@ -32,16 +37,23 @@ export const mockShiftTypes: ShiftTypeDto[] = [
   },
 ];
 
-export const mockEmployees: EmployeeDto[] = [
-  {
-    id: 1,
-    employeeNo: 'E001',
-    name: '张三',
-    title: '护士',
-    phone: '13800000001',
-    status: 'active',
-  },
-];
+export function buildMockEmployees(count: number): EmployeeDto[] {
+  return Array.from({ length: count }, (_, index) => {
+    const id = index + 1;
+    return {
+      id,
+      employeeNo: `E${String(id).padStart(3, '0')}`,
+      name: `员工${id}`,
+      title: '护士',
+      phone: `138${String(id).padStart(8, '0')}`,
+      status: 'active',
+    };
+  });
+}
+
+export const mockEmployees: EmployeeDto[] = buildMockEmployees(1);
+
+export const mockTenEmployees: EmployeeDto[] = buildMockEmployees(10);
 
 export const mockPeriod: PeriodDto = {
   id: MOCK_PERIOD_ID,
@@ -54,7 +66,21 @@ export const mockPeriod: PeriodDto = {
   updatedAt: '2026-06-22T00:00:00.000Z',
 };
 
-function buildDailyCoverage(weekStart: string, shiftTypes: ShiftTypeDto[]): DailyCoverageItemDto[] {
+function countEntriesForCoverage(
+  entries: ScheduleEntryDto[],
+  workDate: string,
+  shiftTypeId: number,
+): number {
+  return entries.filter(
+    (entry) => entry.workDate === workDate && entry.shiftTypeId === shiftTypeId,
+  ).length;
+}
+
+function buildDailyCoverage(
+  weekStart: string,
+  shiftTypes: ShiftTypeDto[],
+  entries: ScheduleEntryDto[] = [],
+): DailyCoverageItemDto[] {
   return Array.from({ length: 7 }, (_, index) => {
     const workDate = dayjs(weekStart).add(index, 'day').format('YYYY-MM-DD');
     return {
@@ -64,7 +90,7 @@ function buildDailyCoverage(weekStart: string, shiftTypes: ShiftTypeDto[]): Dail
         .map((shiftType) => ({
           shiftTypeId: shiftType.id,
           code: shiftType.code,
-          assignedCount: 0,
+          assignedCount: countEntriesForCoverage(entries, workDate, shiftType.id),
           minRequiredCount: shiftType.minRequiredCount,
         })),
     };
@@ -80,7 +106,14 @@ export const mockScheduleWarnings = [
   },
 ];
 
-export function buildMockScheduleGrid(options?: { warnings?: typeof mockScheduleWarnings }) {
+export function buildMockScheduleGrid(options?: {
+  warnings?: typeof mockScheduleWarnings;
+  employees?: EmployeeDto[];
+  entries?: ScheduleEntryDto[];
+}) {
+  const employees = options?.employees ?? mockEmployees;
+  const entries = options?.entries ?? [];
+
   return {
     period: {
       id: mockPeriod.id,
@@ -90,10 +123,10 @@ export function buildMockScheduleGrid(options?: { warnings?: typeof mockSchedule
       latestPublishedVersion: mockPeriod.latestPublishedVersion,
       lastPublishedAt: mockPeriod.lastPublishedAt,
     },
-    employees: mockEmployees,
+    employees,
     shiftTypes: mockShiftTypes,
-    entries: [],
-    dailyCoverage: buildDailyCoverage(MOCK_WEEK_START, mockShiftTypes),
+    entries,
+    dailyCoverage: buildDailyCoverage(MOCK_WEEK_START, mockShiftTypes, entries),
     warnings: options?.warnings ?? [],
   };
 }
