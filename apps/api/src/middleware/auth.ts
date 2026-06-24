@@ -6,6 +6,7 @@ import { users } from '../db/schema/index.js';
 import { AppError } from '../lib/errors.js';
 import { verifySession } from '../lib/jwt.js';
 import { COOKIE_NAME, env } from '../config/env.js';
+import { isAllowedWebOrigin } from '../lib/cors-origin.js';
 
 export type AuthUser = {
   id: number;
@@ -102,7 +103,7 @@ export async function validateCsrfOrigin(c: Context) {
     throw new AppError(403, 'FORBIDDEN', 'Origin 格式无效');
   }
 
-  if (requestOrigin !== env.CORS_ORIGIN) {
+  if (!isAllowedWebOrigin(requestOrigin)) {
     throw new AppError(403, 'FORBIDDEN', 'Origin 不在白名单内');
   }
 }

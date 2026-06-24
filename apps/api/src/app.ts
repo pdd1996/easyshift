@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { env } from './config/env.js';
 import { AppError, errorResponse } from './lib/errors.js';
+import { resolveCorsOrigin } from './lib/cors-origin.js';
 import { healthRoutes } from './routes/health.js';
 import { authAdminRoutes } from './routes/auth-admin.js';
 import { departmentRoutes } from './routes/department.js';
@@ -17,7 +17,7 @@ export function createApp() {
   app.use(
     '*',
     cors({
-      origin: env.CORS_ORIGIN,
+      origin: (origin) => resolveCorsOrigin(origin),
       credentials: true,
     }),
   );

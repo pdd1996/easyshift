@@ -14,6 +14,9 @@ interface WeChatCode2SessionResponse {
 
 export async function exchangeCodeForOpenid(code: string): Promise<WeChatSession> {
   if (env.WX_MOCK) {
+    if (env.WX_MOCK_OPENID) {
+      return { openid: env.WX_MOCK_OPENID };
+    }
     return { openid: `mock_openid_${code}` };
   }
 

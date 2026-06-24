@@ -69,6 +69,7 @@ docker run -d --name easyshift-mysql \
 | `WX_APPID` | 微信小程序 AppID | — |
 | `WX_SECRET` | 微信小程序 Secret | — |
 | `WX_MOCK` | 是否用本地假 openid 跳过微信 `code2session` | `true`（仅 development / test） |
+| `WX_MOCK_OPENID` | 本地联调固定 openid；不设时按 code 生成，便于测试多用户 | `mock_openid_local_dev` |
 | `CORS_ORIGIN` | Web 开发地址 | `http://localhost:5173` |
 | `COOKIE_SECURE` | Cookie Secure（本地 false） | `false` |
 

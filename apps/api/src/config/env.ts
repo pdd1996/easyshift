@@ -15,6 +15,7 @@ const envSchema = z
       .string()
       .optional()
       .transform((v) => v === 'true'),
+    WX_MOCK_OPENID: z.string().optional().default(''),
     CORS_ORIGIN: z.string().default('http://localhost:5173'),
     COOKIE_SECURE: z
       .string()
