@@ -1,15 +1,36 @@
-.container {
-  padding: 48rpx;
+.page {
+  min-height: 100vh;
+  padding: 32rpx;
+  box-sizing: border-box;
+  background-color: var(--td-bg-color-page);
+}
+
+.hero {
+  margin-bottom: 32rpx;
 }
 
 .title {
   display: block;
-  font-size: 40rpx;
+  font-size: 44rpx;
   font-weight: 600;
-  margin-bottom: 16rpx;
+  color: var(--td-text-color-primary);
 }
 
-.desc {
+.subtitle {
   display: block;
-  color: #666;
+  margin-top: 8rpx;
+  margin-bottom: 20rpx;
+  font-size: 28rpx;
+  color: var(--td-text-color-secondary);
+}
+
+.footer {
+  margin-top: 32rpx;
+  padding: 0 8rpx;
+}
+
+.hint {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--td-text-color-placeholder);
 }

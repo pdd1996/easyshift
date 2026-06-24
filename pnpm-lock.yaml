@@ -66,6 +66,12 @@ importers:
         specifier: ^3.2.4
         version: 3.2.6(@types/node@22.20.0)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(msw@2.14.6(@types/node@22.20.0)(typescript@5.9.3))(tsx@4.22.4)
 
+  apps/miniapp:
+    dependencies:
+      tdesign-miniprogram:
+        specifier: ^1.15.1
+        version: 1.15.1
+
   apps/web:
     dependencies:
       '@easyshift/shared-types':
@@ -2390,6 +2396,9 @@ packages:
     resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
     engines: {node: '>=6'}
 
+  tdesign-miniprogram@1.15.1:
+    resolution: {integrity: sha512-RTqsiNplYU3lLmpPFzIsT1WgfX226F8Xw6siWJ2B9iR1JYblMTxX6WniT0hl5vgS2J9lMYNjo06BIGPuGov2UA==}
+
   throttle-debounce@5.0.2:
     resolution: {integrity: sha512-B71/4oyj61iNH0KeCamLuE2rmKuTO5byTOSVwECM5FA7TiAiAW+UqTKZ9ERueC4qvgSttUhdmq1mXC3kJqGX7A==}
     engines: {node: '>=12.22'}
@@ -4666,6 +4675,8 @@ snapshots:
   tailwindcss@4.3.1: {}
 
   tapable@2.3.3: {}
+
+  tdesign-miniprogram@1.15.1: {}
 
   throttle-debounce@5.0.2: {}
 

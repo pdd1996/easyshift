@@ -14,3 +14,4 @@ apps/api/drizzle/meta/_journal.json.bak
 playwright-report/
 test-results/
 apps/miniapp/miniprogram_npm/
+apps/miniapp/project.private.config.json

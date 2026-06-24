@@ -15,7 +15,8 @@
     "db:generate": "pnpm --filter @easyshift/api db:generate",
     "db:migrate": "pnpm --filter @easyshift/api db:migrate",
     "db:seed": "pnpm --filter @easyshift/api db:seed",
-    "db:studio": "pnpm --filter @easyshift/api db:studio"
+    "db:studio": "pnpm --filter @easyshift/api db:studio",
+    "miniapp:install": "cd apps/miniapp && pnpm install"
   },
   "engines": {
     "node": ">=20"

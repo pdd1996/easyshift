@@ -1,4 +1,16 @@
-<view class="container">
-  <text class="title">EasyShift 易排班</text>
-  <text class="desc">{{message}}</text>
+<view class="page">
+  <view class="hero">
+    <text class="title">EasyShift 易排班</text>
+    <text class="subtitle">员工端 · 查看个人班表</text>
+    <t-tag theme="primary" variant="light" size="small">开发中</t-tag>
+  </view>
+
+  <t-cell-group theme="card">
+    <t-cell title="我的班表" note="绑定后可查看已发布班表" arrow />
+    <t-cell title="绑定账号" note="绑定码 + 手机号后四位" arrow />
+  </t-cell-group>
+
+  <view class="footer">
+    <text class="hint">{{message}}</text>
+  </view>
 </view>

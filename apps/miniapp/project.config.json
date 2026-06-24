@@ -6,7 +6,9 @@
   "setting": {
     "urlCheck": false,
     "es6": true,
-    "minified": true
+    "minified": true,
+    "minifyWXSS": true,
+    "packNpmManually": false
   },
   "compileType": "miniprogram",
   "appid": "touristappid",

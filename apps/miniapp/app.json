@@ -1,7 +1,13 @@
 {
   "pages": ["pages/index/index"],
+  "darkmode": true,
+  "themeLocation": "theme.json",
   "window": {
     "navigationBarTitleText": "EasyShift 易排班",
-    "navigationBarBackgroundColor": "#ffffff"
-  }
+    "navigationBarBackgroundColor": "@navBgColor",
+    "navigationBarTextStyle": "@navTxtStyle",
+    "backgroundColor": "@bgColor",
+    "backgroundTextStyle": "@bgTxtStyle"
+  },
+  "sitemapLocation": "sitemap.json"
 }
