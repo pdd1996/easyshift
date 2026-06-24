@@ -65,6 +65,8 @@
 | 续期 | 登录成功签发新 Token；v1 不做滑动续期 |
 | 作废依据 | `users.token_valid_after` |
 
+微信 `code2session` 在本地开发和 API 测试中允许通过 `WX_MOCK=true` 使用假 openid；该配置只允许用于 `development` / `test`。生产环境必须配置真实 `WX_APPID` / `WX_SECRET` 且 `WX_MOCK=false`，服务端在 `NODE_ENV=production && WX_MOCK=true` 时会启动失败。
+
 ### 3.3 Token 失效场景（PRD A-01～A-04）
 
 | 事件 | 动作 |
@@ -93,7 +95,7 @@ v1 统一使用 `users.token_valid_after` 作废旧 Token / Web JWT 会话。所
 - 存储：`employee_binding_codes.code_hash` = bcrypt(绑定码)
 - 生命周期：一次性；绑定成功 → `used`；管理员重置 → 旧 `active` 标 `expired`
 - 二次校验：手机号后四位与 `employees.phone` 比对
-- 并发：同一员工仅一个 `active` 绑定码
+- 并发：同一员工仅一个 `active` 绑定码；消费绑定码时必须用条件更新或等价事务控制，确保同一个绑定码只有一个请求能成功
 
 ---
 

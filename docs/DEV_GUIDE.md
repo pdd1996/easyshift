@@ -68,6 +68,7 @@ docker run -d --name easyshift-mysql \
 | `MINIAPP_TOKEN_TTL_DAYS` | 小程序 Token 有效期（天） | `30` |
 | `WX_APPID` | 微信小程序 AppID | — |
 | `WX_SECRET` | 微信小程序 Secret | — |
+| `WX_MOCK` | 是否用本地假 openid 跳过微信 `code2session` | `true`（仅 development / test） |
 | `CORS_ORIGIN` | Web 开发地址 | `http://localhost:5173` |
 | `COOKIE_SECURE` | Cookie Secure（本地 false） | `false` |
 
@@ -166,7 +167,18 @@ pnpm dev:web       # 仅 Web
 
 Web 端为员工生成绑定码 → 小程序输入绑定码 + 手机号后四位。
 
-本地调试微信 `code2session` 时，API 可配置 `WX_MOCK=true` 使用假 openid（仅 development）。
+本地调试微信 `code2session` 时，API 可配置 `WX_MOCK=true` 使用假 openid（仅 `development` / API 测试）。Vitest 会自动注入 `WX_MOCK=true` 并把数据库切到 `easyshift_test`。
+
+真实部署环境必须使用微信接口：
+
+```env
+NODE_ENV=production
+WX_MOCK=false
+WX_APPID=真实小程序 AppID
+WX_SECRET=真实小程序 Secret
+```
+
+服务端已禁止 `NODE_ENV=production` 时开启 `WX_MOCK=true`；如误配会启动失败，避免线上接受伪造 openid。
 
 ---
 
