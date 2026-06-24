@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { EmployeesPage } from '@/features/employees/EmployeesPage';
+import { ShiftTypesPage } from '@/features/shift-types/ShiftTypesPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
         >
           <Route index element={<DashboardPage />} />
           <Route path="employees" element={<EmployeesPage />} />
+          <Route path="shift-types" element={<ShiftTypesPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
