@@ -120,12 +120,43 @@ export interface PublishResultDto {
   notificationText: string;
 }
 
+export interface CopyFromPreviousWeekResultDto {
+  sourceWeekStart: string;
+  copiedCount: number;
+  skippedCount: number;
+  entries: ScheduleEntryDto[];
+  warnings: Array<{
+    code: string;
+    message: string;
+    employeeId?: number;
+    shiftTypeId?: number;
+    workDate?: string;
+  }>;
+}
+
 export function usePublishPeriod(periodId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (options: { acknowledgeWarnings?: boolean } = {}) => {
       const { data } = await apiClient.post<{ data: PublishResultDto }>(
         `/schedule/periods/${periodId}/publish`,
+        options,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedule', 'grid', periodId] });
+      queryClient.invalidateQueries({ queryKey: ['schedule', 'periods'] });
+    },
+  });
+}
+
+export function useCopyFromPreviousWeek(periodId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (options: { sourceWeekStart?: string } = {}) => {
+      const { data } = await apiClient.post<{ data: CopyFromPreviousWeekResultDto }>(
+        `/schedule/periods/${periodId}/copy-from-previous-week`,
         options,
       );
       return data.data;

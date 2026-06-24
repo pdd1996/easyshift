@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   getApiErrorMessage,
+  useCopyFromPreviousWeek,
   useCreatePeriod,
   useDeleteEntry,
   usePublishPeriod,
@@ -92,6 +93,7 @@ export function SchedulePage() {
   const upsertMutation = useUpsertEntries(currentPeriod?.id ?? 0);
   const deleteMutation = useDeleteEntry(currentPeriod?.id ?? 0);
   const publishMutation = usePublishPeriod(currentPeriod?.id ?? 0);
+  const copyMutation = useCopyFromPreviousWeek(currentPeriod?.id ?? 0);
   const validationMutation = useValidatePeriod(currentPeriod?.id ?? 0);
 
   const canPublish = useMemo(() => {
@@ -186,6 +188,49 @@ export function SchedulePage() {
     } catch (error) {
       message.error(getApiErrorMessage(error));
     }
+  };
+
+  const handleCopyFromPreviousWeek = async () => {
+    if (!currentPeriod || !grid?.period) {
+      return;
+    }
+
+    modal.confirm({
+      title: '复制上周',
+      content: `将上一周（${formatWeekRange(addWeeks(weekStart, -1))}）的草稿复制到当前周，并覆盖本周期已有草稿。`,
+      okText: '确认复制',
+      cancelText: '取消',
+      onOk: async () => {
+        const allowed = await ensureCanEdit();
+        if (!allowed) {
+          return;
+        }
+
+        try {
+          const result = await copyMutation.mutateAsync({});
+          if (result.warnings.length > 0) {
+            message.success(`已复制 ${result.copiedCount} 条排班，跳过 ${result.skippedCount} 条`);
+            modal.warning({
+              title: '部分条目已跳过',
+              width: 480,
+              content: (
+                <ul className="mb-0 max-h-40 list-inside list-disc overflow-y-auto">
+                  {result.warnings.map((warning, index) => (
+                    <li key={`${warning.code}-${warning.workDate}-${index}`}>{warning.message}</li>
+                  ))}
+                </ul>
+              ),
+              okText: '知道了',
+            });
+          } else {
+            message.success(`已复制 ${result.copiedCount} 条排班`);
+          }
+        } catch (error) {
+          message.error(getApiErrorMessage(error, '复制失败'));
+          throw error;
+        }
+      },
+    });
   };
 
   const handleCheckWarnings = () => {
@@ -284,6 +329,7 @@ export function SchedulePage() {
 
   const isSaving = upsertMutation.isPending || deleteMutation.isPending;
   const isPublishing = publishMutation.isPending || validationMutation.isPending;
+  const isCopying = copyMutation.isPending;
   const isLoading = periodsLoading || (currentPeriod != null && gridLoading);
   const isCurrentWeek = weekStart === weekStartFromDate(new Date());
   const isNextWeek = weekStart === addWeeks(weekStartFromDate(new Date()), 1);
@@ -330,6 +376,9 @@ export function SchedulePage() {
 
         {grid && (
           <Space wrap>
+            <Button loading={isCopying} onClick={handleCopyFromPreviousWeek}>
+              复制上周
+            </Button>
             <Button onClick={handleCheckWarnings}>
               检查覆盖{grid.warnings.length > 0 ? `（${grid.warnings.length}）` : ''}
             </Button>

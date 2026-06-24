@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { getDefaultDepartment } from '../lib/department.js';
 import { validateCsrfOrigin, requireAdmin } from '../middleware/auth.js';
+import { copyFromPreviousWeek } from '../services/schedule/copy.js';
 import { deleteEntry, upsertEntries } from '../services/schedule/entry.js';
 import { getScheduleGrid } from '../services/schedule/grid.js';
 import { createPeriod, getPeriod, listPeriods } from '../services/schedule/period.js';
@@ -39,6 +40,10 @@ const deleteEntryBodySchema = z.object({
 
 const publishBodySchema = z.object({
   acknowledgeWarnings: z.boolean().optional(),
+});
+
+const copyFromPreviousWeekBodySchema = z.object({
+  sourceWeekStart: dateStringSchema.optional(),
 });
 
 export const scheduleRoutes = new Hono();
@@ -128,7 +133,35 @@ scheduleRoutes.delete('/periods/:periodId/entries', zValidator('json', deleteEnt
 
 scheduleRoutes.post('/periods/:periodId/copy-from-previous-week', async (c) => {
   await validateCsrfOrigin(c);
-  notImplemented('POST /schedule/periods/:periodId/copy-from-previous-week');
+  const periodId = parsePeriodId(c.req.param('periodId'));
+  if (periodId === null) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: '无效的排班周期 ID' } }, 400);
+  }
+
+  let options: { sourceWeekStart?: string } = {};
+  const contentType = c.req.header('content-type');
+  if (contentType?.includes('application/json')) {
+    const rawBody = await c.req.text();
+    let jsonBody: unknown = {};
+    if (rawBody.trim() !== '') {
+      try {
+        jsonBody = JSON.parse(rawBody) as unknown;
+      } catch {
+        return c.json({ error: { code: 'VALIDATION_ERROR', message: '请求体格式无效' } }, 400);
+      }
+    }
+
+    const parsed = copyFromPreviousWeekBodySchema.safeParse(jsonBody);
+    if (!parsed.success) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: '请求体格式无效' } }, 400);
+    }
+    options = parsed.data;
+  }
+
+  const department = await getDefaultDepartment();
+  const authUser = c.get('authUser');
+  const data = await copyFromPreviousWeek(department.id, periodId, authUser.id, options);
+  return c.json({ data });
 });
 scheduleRoutes.get('/periods/:periodId/validation', async (c) => {
   const periodId = parsePeriodId(c.req.param('periodId'));
