@@ -411,4 +411,41 @@ describe.skipIf(skipDbTests && !dbAvailable)('staff schedule API (AC-11, AC-12)'
       expect(body.data.status).toBe('not_published');
     }
   });
+
+  it('rejects staff schedule after employee is deactivated', async () => {
+    const employeeRes = await app.request('/api/v1/employees', {
+      method: 'POST',
+      headers: adminHeaders(adminCookie),
+      body: JSON.stringify({
+        employeeNo: `SD${runSuffix}`,
+        name: '停用班表测试',
+        phone: `13809${runSuffix}`,
+      }),
+    });
+    const employeeBody = (await employeeRes.json()) as { data: { id: number } };
+    const deactivatedEmployeeId = employeeBody.data.id;
+    createdEmployeeIds.push(deactivatedEmployeeId);
+
+    const staff = await createStaffUserForEmployee(deactivatedEmployeeId);
+    createdStaffUserIds.push(staff.userId);
+
+    const deactivateRes = await app.request(
+      `/api/v1/employees/${deactivatedEmployeeId}/deactivate`,
+      {
+        method: 'POST',
+        headers: adminHeaders(adminCookie),
+      },
+    );
+    expect(deactivateRes.status).toBe(200);
+
+    const scheduleRes = await app.request(`/api/v1/staff/schedule?weekStart=${weekStart}`, {
+      headers: staffHeaders(staff.token),
+    });
+    expect([401, 403]).toContain(scheduleRes.status);
+
+    const meRes = await app.request('/api/v1/staff/me', {
+      headers: staffHeaders(staff.token),
+    });
+    expect([401, 403]).toContain(meRes.status);
+  });
 });

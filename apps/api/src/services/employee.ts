@@ -243,6 +243,11 @@ export async function generateBindingCode(
     throw new AppError(422, 'BUSINESS_RULE_VIOLATION', '停用员工不能生成绑定码');
   }
 
+  const boundIds = await getBoundEmployeeIds([employeeId]);
+  if (boundIds.has(employeeId)) {
+    throw new AppError(422, 'ALREADY_BOUND', '该员工已绑定微信');
+  }
+
   const plainCode = generateBindingCodePlain();
   const codeHash = await bcrypt.hash(plainCode, 10);
   const expiresAt = new Date(Date.now() + BINDING_CODE_TTL_HOURS * 60 * 60 * 1000);

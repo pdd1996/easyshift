@@ -3,6 +3,8 @@ import { createApp } from './app.js';
 import { adminHeaders, loginAsAdmin } from './test/helpers.js';
 import {
   cleanupTestEmployees,
+  cleanupTestStaffUsers,
+  createStaffUserForEmployee,
   ensureTestFixtures,
   isDatabaseAvailable,
 } from './test/seed-test.js';
@@ -14,6 +16,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('employees API', () => {
   const app = createApp();
   let cookie = '';
   const createdEmployeeIds: number[] = [];
+  const createdStaffUserIds: number[] = [];
   const runSuffix = Date.now().toString().slice(-6);
   const primaryEmployeeNo = `T${runSuffix}`;
   const secondaryEmployeeNo = `T${runSuffix}2`;
@@ -28,6 +31,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('employees API', () => {
   });
 
   afterAll(async () => {
+    await cleanupTestStaffUsers(createdStaffUserIds);
     await cleanupTestEmployees(createdEmployeeIds);
   });
 
@@ -126,5 +130,33 @@ describe.skipIf(skipDbTests && !dbAvailable)('employees API', () => {
     };
     expect(body.data.bindingCode).toMatch(/^[A-Z2-9]{6}$/);
     expect(body.data.expiresAt).toContain('+08:00');
+  });
+
+  it('rejects binding code generation for already bound employee', async () => {
+    const createRes = await app.request('/api/v1/employees', {
+      method: 'POST',
+      headers: adminHeaders(cookie),
+      body: JSON.stringify({
+        employeeNo: `T${runSuffix}B`,
+        name: '已绑定员工',
+        phone: `13901${runSuffix}`,
+      }),
+    });
+    const createBody = (await createRes.json()) as { data: { id: number } };
+    const employeeId = createBody.data.id;
+    createdEmployeeIds.push(employeeId);
+
+    const staff = await createStaffUserForEmployee(employeeId);
+    createdStaffUserIds.push(staff.userId);
+
+    const res = await app.request(`/api/v1/employees/${employeeId}/binding-code`, {
+      method: 'POST',
+      headers: adminHeaders(cookie),
+    });
+
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe('ALREADY_BOUND');
+    expect(body.error.message).toContain('已绑定');
   });
 });

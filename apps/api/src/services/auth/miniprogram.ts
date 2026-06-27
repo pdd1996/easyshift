@@ -123,10 +123,19 @@ export async function miniProgramLogin(code: string) {
   }
 
   if (user.status !== 'active') {
-    throw new AppError(403, 'FORBIDDEN', '账号已停用');
+    return { bound: false as const };
   }
 
-  const employee = await loadBoundEmployeeInfo(user.employeeId);
+  let employee: BoundEmployeeInfo;
+  try {
+    employee = await loadBoundEmployeeInfo(user.employeeId);
+  } catch (error) {
+    if (error instanceof AppError && error.status === 403) {
+      return { bound: false as const };
+    }
+    throw error;
+  }
+
   const session = issueStaffSession(user.id);
 
   return {

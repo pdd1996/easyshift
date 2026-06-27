@@ -220,16 +220,22 @@ describe.skipIf(skipDbTests && !dbAvailable)('miniprogram binding API (AC-10)', 
   });
 
   it('[s5] 已绑定员工再次绑定 → 422 + ALREADY_BOUND', async () => {
-    const bindingCode = await generateBindingCode(app, adminCookie, employeeId);
-    const wxCode = `wx_bind_s5_${runSuffix}`;
+    const codeRes = await app.request(`/api/v1/employees/${employeeId}/binding-code`, {
+      method: 'POST',
+      headers: adminHeaders(adminCookie),
+    });
+    expect(codeRes.status).toBe(422);
+    const codeBody = (await codeRes.json()) as { error: { code: string } };
+    expect(codeBody.error.code).toBe('ALREADY_BOUND');
 
+    const bindingCode = await generateBindingCode(app, adminCookie, secondaryEmployeeId);
     const res = await app.request('/api/v1/auth/miniprogram/bind', {
       method: 'POST',
       headers: miniProgramJsonHeaders(),
       body: JSON.stringify({
-        code: wxCode,
+        code: `wx_bind_s1_${runSuffix}`,
         bindingCode,
-        phoneLastFour: employeePhone.slice(-4),
+        phoneLastFour: `13802${runSuffix}`.slice(-4),
       }),
     });
 
@@ -365,10 +371,10 @@ describe.skipIf(skipDbTests && !dbAvailable)('miniprogram binding API (AC-10)', 
     const preBoundEmployeeId = preBoundBody.data.id;
     createdEmployeeIds.push(preBoundEmployeeId);
 
+    const bindingCode = await generateBindingCode(app, adminCookie, preBoundEmployeeId);
     const staff = await createStaffUserForEmployee(preBoundEmployeeId);
     createdStaffUserIds.push(staff.userId);
 
-    const bindingCode = await generateBindingCode(app, adminCookie, preBoundEmployeeId);
     const res = await app.request('/api/v1/auth/miniprogram/bind', {
       method: 'POST',
       headers: miniProgramJsonHeaders(),
@@ -483,5 +489,50 @@ describe.skipIf(skipDbTests && !dbAvailable)('miniprogram binding API (AC-10)', 
     expect(meBody.data.employee.name).toBe('资料测试员工');
     expect(meBody.data.employee.employeeNo).toBe(`B${runSuffix}8`);
     expect(meBody.data.employee.departmentName).toBeTruthy();
+  });
+
+  it('login returns bound=false when bound employee is deactivated', async () => {
+    const employeeRes = await app.request('/api/v1/employees', {
+      method: 'POST',
+      headers: adminHeaders(adminCookie),
+      body: JSON.stringify({
+        employeeNo: `B${runSuffix}9`,
+        name: '停用后登录测试',
+        phone: `13809${runSuffix}`,
+      }),
+    });
+    const employeeBody = (await employeeRes.json()) as { data: { id: number } };
+    const inactiveEmployeeId = employeeBody.data.id;
+    createdEmployeeIds.push(inactiveEmployeeId);
+
+    const bindingCode = await generateBindingCode(app, adminCookie, inactiveEmployeeId);
+    const wxCode = `wx_inactive_login_${runSuffix}`;
+    const phoneLastFour = `13809${runSuffix}`.slice(-4);
+
+    const bindRes = await app.request('/api/v1/auth/miniprogram/bind', {
+      method: 'POST',
+      headers: miniProgramJsonHeaders(),
+      body: JSON.stringify({ code: wxCode, bindingCode, phoneLastFour }),
+    });
+    expect(bindRes.status).toBe(200);
+
+    const deactivateRes = await app.request(
+      `/api/v1/employees/${inactiveEmployeeId}/deactivate`,
+      {
+        method: 'POST',
+        headers: adminHeaders(adminCookie),
+      },
+    );
+    expect(deactivateRes.status).toBe(200);
+
+    const loginRes = await app.request('/api/v1/auth/miniprogram/login', {
+      method: 'POST',
+      headers: miniProgramJsonHeaders(),
+      body: JSON.stringify({ code: wxCode }),
+    });
+    expect(loginRes.status).toBe(200);
+    const loginBody = (await loginRes.json()) as { data: { bound: boolean } };
+    expect(loginBody.data.bound).toBe(false);
+    expect(loginBody.data).not.toHaveProperty('token');
   });
 });

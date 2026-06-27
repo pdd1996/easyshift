@@ -67,6 +67,9 @@ export async function getStaffSchedule(
   if (!employee) {
     throw new AppError(404, 'NOT_FOUND', '员工不存在');
   }
+  if (employee.status !== 'active') {
+    throw new AppError(403, 'FORBIDDEN', '员工账号已停用');
+  }
 
   const [period] = await db
     .select()
