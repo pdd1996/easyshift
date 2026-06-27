@@ -216,6 +216,13 @@ WX_SECRET=真实小程序 Secret
 
 `users.status = disabled` 表示账号停用，不等于未绑定；`employees.status = inactive` 表示员工档案停用，也不等于清除微信绑定。需要模拟“未绑定”时，应清 `wx_openid` / `employee_id` 并让旧 Token 失效。
 
+员工被 Web 端停用后，小程序不应继续展示已发布班表：
+
+- 后端 `/auth/miniprogram/login` 对已停用员工返回 `bound=false`，不再签发 Token。
+- 后端 `/staff/me` 与 `/staff/schedule` 会拒绝停用员工的旧 Token，可能返回 `401` 或 `403`。
+- 小程序收到 `401` / `403` 后会清理 `easyshift_token`、`easyshift_expires_at`、`easyshift_employee`，并跳回绑定页。
+- Web 员工列表中“已绑定”只表示仍存在微信绑定关系；员工停用不等于解绑。换手机或重置绑定应走后续 Web 解绑 / 重置绑定流程。
+
 ---
 
 ## 4. 常用命令
@@ -274,6 +281,7 @@ WX_SECRET=真实小程序 Secret
 | Web 登录后 401 | Cookie 未带上、`CORS_ORIGIN` 不匹配 | 确认 axios `withCredentials`、API CORS |
 | 小程序绑定失败 | 合法域名、AppID/Secret 错误 | 开发环境关闭域名校验；检查 `.env` |
 | 小程序删除后仍显示已绑定 | 本地 Storage 或服务端 `users.wx_openid` / `users.employee_id` 仍保留 | 按 §3.4 同时清 Storage 与服务端绑定关系 |
+| 员工停用后小程序仍能看到班表 | 小程序未重新进入页面、API 未部署最新代码或本地 Storage 未清 | 完全关闭小程序后重开；确认 `/staff/me` / `/staff/schedule` 返回 401/403 并清 session |
 | migration 失败 | 与现有表冲突 | 开发库可 `drop` 重建；勿对生产库随意 drop |
 | 发布重复版本号 | 并发发布 | 见 [DATABASE.md](./DATABASE.md) 发布事务说明 |
 

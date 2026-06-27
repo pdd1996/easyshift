@@ -179,6 +179,7 @@ easyshift/
 | s1 | 状态 | WEB-EMP-02 / AC-01 | 工号重复 → 表单错误「工号已存在」 | COMP + API |
 | s2 | 状态 | WEB-EMP-04 | 停用员工后状态为 inactive | API |
 | s3 | 状态 | — | POST 重复工号返回 409 | API |
+| s4 | 状态 | WEB-EMP-06 / WEB-EMP-07 | 已绑定员工不展示「绑定码」操作，后端生成绑定码返回 `ALREADY_BOUND` | COMP + API |
 
 ---
 
@@ -305,6 +306,7 @@ easyshift/
 | s5 | 状态 | MP-AUTH-04 | 已绑定员工再次绑定 → 4xx | API |
 | s6 | 状态 | MP-AUTH-04 | 同一 openid 绑第二人 → 4xx | API |
 | s7 | 状态 | A-03 | 解绑后旧 Token → 401 | API |
+| s8 | 状态 | A-03 / WEB-EMP-04 | 已绑定员工停用后再次 login → `bound=false`，不签发 Token | API + MANUAL |
 
 ---
 
@@ -319,6 +321,7 @@ easyshift/
 | s3 | 状态 | AC-12 | 条目含班次名、日期、时间段、published_at | API + MANUAL |
 | s4 | 状态 | MP-SCH-06 | OFF 休息班次显式展示，非空白 | API + MANUAL |
 | s5 | 状态 | AC-13 | 员工 A token 查员工 B schedule → 403 | API |
+| s6 | 状态 | A-03 / WEB-EMP-04 | 员工停用后旧 Token 访问 `/staff/me` / `/staff/schedule` → 401 或 403，客户端清 session 并回绑定页 | API + MANUAL |
 | u1 | 逻辑 | MP-SCH / 风险表 | 大夜班跨日展示文案正确 | UNIT + MANUAL |
 
 ---
@@ -427,6 +430,8 @@ on: push main / release
 - [ ] **MP-UI-02** 系统 / 微信切换深色模式后，绑定页与班表页文字、背景、组件样式正确
 - [ ] **AC-13** 两名员工各看各的，互不串数据
 - [ ] **AC-08** 管理员改班未再发布时，员工仍看旧版；再发布后看新版
+- [ ] **A-03 / WEB-EMP-04** Web 停用已绑定员工后，小程序重新进入班表 / 我的页应清 session 并回绑定页，不能继续查看已发布班表
+- [ ] **WEB-EMP-06 / WEB-EMP-07** Web 已绑定员工不显示「绑定码」操作；直接调用生成绑定码接口返回 `ALREADY_BOUND`
 
 ---
 
