@@ -2,8 +2,8 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.0 |
-| 关联文档 | [PRD.md](./PRD.md) 第 4.3 节、第 5.3 节 · [API.md](./API.md) |
+| 文档版本 | v1.1 |
+| 关联文档 | [PRD.md](./PRD.md) 第 4.3 节、第 5.3 节 · [API.md](./API.md) · [DATABASE.md](./DATABASE.md) |
 
 ---
 
@@ -38,8 +38,29 @@
 ### 2.1 接口鉴权规则（PRD P-01～P-04）
 
 - 路径前缀 `/auth/admin/*`、`/employees`、`/shift-types`、`/schedule/*`（管理类）→ 要求 `role = admin` 且 `status = active`
-- 路径前缀 `/auth/miniprogram/*`、`/staff/*` → 要求 `role = staff` 且 `status = active`
+- `/auth/miniprogram/login`、`/auth/miniprogram/bind` → 不要求已有 Token；分别通过微信 `code`、绑定码与手机号后四位完成身份校验
+- `/auth/miniprogram/unbind`、`/staff/*` → 要求 Bearer Token，且 `role = staff`、`status = active`
 - `/staff/schedule` 响应必须按当前 `employee_id` 过滤，禁止通过参数指定他人 ID
+
+### 2.2 小程序绑定状态（v1）
+
+| 概念 | 判定 / 行为 |
+|------|------------|
+| 已绑定 | `users.role = staff` 且 `wx_openid`、`employee_id` 均有值；Web 列表 `bindingStatus = bound` 只看此条件 |
+| 未绑定 | 上述字段任一为空，或 staff 用户行已被解绑删除 |
+| `users.status = active` | 该登录账号可用；**不能**单独代表已绑定 |
+| `users.status = disabled` | 账号停用；登录与 Token 鉴权必须失败，但绑定字段可能仍保留 |
+| `employees.status = inactive` | 员工档案停用；不可新排班、不可绑定；已绑定员工登录返回 `bound: false` |
+
+**三种操作的权限与安全效果**：
+
+| 操作 | 入口 | 数据变更 | Token 效果 |
+|------|------|---------|-----------|
+| 小程序解绑 | `POST /auth/miniprogram/unbind` | **删除** staff `users` 行 | 旧 Token → `401` |
+| Web 停用员工 | `POST /employees/:id/deactivate` | `employees.status = inactive`；更新 `token_valid_after`；**保留** wx 绑定 | 旧 Token 通常 → `401`；若仍通过鉴权但员工已 inactive → `403`；登录 → `bound: false` |
+| Web 管理员强制解绑 | — | **v1 未实现** | — |
+
+Web 管理员强制解绑 v1 无对应接口；换手机依赖小程序自助解绑（P2）或运维手动处理。
 
 ---
 
@@ -71,13 +92,20 @@
 
 | 事件 | 动作 |
 |------|------|
-| 员工 `inactive` | 拒绝该 staff 用户所有 Token |
-| 员工解绑 | 删除/失效 staff 用户，拒绝旧 Token |
-| 重新绑定 | 签发新 Token，旧 Token 拒绝 |
+| 员工 `inactive`（Web 停用） | 更新 staff `token_valid_after`；**保留** wx 绑定；旧 Token 通常在鉴权层返回 `401`，若仍通过鉴权但员工已 inactive 则业务层返回 `403`；登录返回 `bound: false` |
+| 员工解绑（小程序） | 更新 `token_valid_after` 后**删除** staff `users` 行；拒绝旧 Token（`401`） |
+| 重新绑定 | 签发新 Token；旧 Token 因 `token_valid_after` 或用户行已删除而拒绝 |
 | 管理员 `disabled` | 拒绝所有 Web 会话 |
 | 管理员改密 | 拒绝改密前签发的所有 Web 会话 |
 
-v1 统一使用 `users.token_valid_after` 作废旧 Token / Web JWT 会话。所有 Web JWT 与小程序 Bearer Token 都必须包含签发时间 `iat`；服务端校验时读取当前用户记录，若 `iat < users.token_valid_after`，即使签名和过期时间合法也必须返回 `401`。员工停用、解绑、重新绑定、管理员停用、管理员改密时，更新对应用户的 `token_valid_after = 当前时间`。
+v1 统一使用 `users.token_valid_after` 作废旧 Token / Web JWT 会话。所有 Web JWT 与小程序 Bearer Token 都必须包含签发时间 `iat`；服务端校验时读取当前用户记录，若 `iat < users.token_valid_after`，即使签名和过期时间合法也必须返回 `401`。
+
+员工停用、解绑、重新绑定、管理员停用、管理员改密时，更新对应用户的 `token_valid_after = 当前时间`。解绑在更新后还会删除 staff 用户行，因此旧 Token 在鉴权层即无法关联用户。
+
+**HTTP 状态码约定（小程序 staff 接口）**：
+
+- `401`：Token 缺失、无效，或 `iat < token_valid_after`（鉴权层）
+- `403`：Token 有效但业务规则拒绝（如员工已 `inactive`、账号未绑定员工）
 
 ---
 
@@ -165,4 +193,5 @@ v1 统一使用 `users.token_valid_after` 作废旧 Token / Web JWT 会话。所
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.1 | 2026-06-27 | 补充绑定状态语义；区分解绑 / 停用 / 未实现的管理员强制解绑；明确 401/403 |
 | v1.0 | 2026-06-23 | 初版 |

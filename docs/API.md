@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.2 |
+| 文档版本 | v1.3 |
 | 关联文档 | [PRD.md](./PRD.md) · [DATABASE.md](./DATABASE.md) · [SECURITY.md](./SECURITY.md) |
 
 ---
@@ -167,6 +167,14 @@
 
 **响应**（未绑定）：`bound: false`，无 Token。
 
+以下情况均返回 `bound: false`（HTTP `200`，非错误）：
+
+- 微信 openid 无对应 staff 用户，或 `employee_id` 为空
+- 关联员工 `employees.status = inactive`（Web 已停用）
+- staff 用户 `users.status = disabled`
+
+已停用员工的 wx 绑定关系可能仍保留在库中，但不再签发 Token。
+
 ---
 
 ### POST `/auth/miniprogram/bind`
@@ -192,6 +200,12 @@
 解绑当前微信与员工关系，作废 Token。需 Bearer 鉴权 + 二次确认参数。
 
 **请求体**：`{ "confirm": true }`
+
+**服务端行为**：先更新 `token_valid_after`，再**删除** staff `users` 行（不是仅清空绑定字段）。
+
+**响应**：`200`，`{ "data": { "ok": true } }`
+
+**后续**：旧 Token 访问任意 staff 接口 → `401`。
 
 ---
 
@@ -270,7 +284,21 @@
 
 停用员工。停用后不可新排班，历史保留。
 
-若该员工已绑定小程序，服务端会作废旧 staff Token。小程序端再次登录应返回未绑定状态，旧 Token 访问 `/staff/me` 或 `/staff/schedule` 会返回 `401` 或 `403`，客户端应清本地 session 并回到绑定页。
+**服务端行为**：
+
+- 设置 `employees.status = inactive`
+- 更新关联 staff 用户的 `token_valid_after = 当前时间`
+- **保留** `wx_openid` / `employee_id`（Web 列表 `bindingStatus` 仍为 `bound`）
+
+**小程序影响**：
+
+- 再次调用 `/auth/miniprogram/login` → `bound: false`，不签发 Token
+- 旧 Token 访问 `/staff/me` 或 `/staff/schedule`：
+  - 默认 `401`（`iat < token_valid_after`，鉴权层拒绝）
+  - 若 Token 仍通过鉴权但员工已 inactive → `403`（业务层拒绝）
+- 客户端应清本地 session 并回到绑定页
+
+**说明**：停用不等于解绑。v1 无 Web 管理员强制解绑接口；换手机需小程序自助解绑（P2）或运维手动处理。
 
 ---
 
@@ -627,6 +655,7 @@ v1 以本文档 + `shared-types` 为契约源。实现稳定后可导出 `docs/o
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.3 | 2026-06-27 | 明确 login 未绑定条件、解绑删行、停用保留绑定及 401/403 语义 |
 | v1.2 | 2026-06-24 | 班次类型新增 `kind` 规则语义字段；排班 warnings 基于 kind 而非 code |
 | v1.1 | 2026-06-24 | 补充排班 warnings 代码表（WEB-VAL-02～04）、发布 `UNACKNOWLEDGED_WARNINGS` 说明 |
 | v1.0 | 2026-06-23 | 初版 REST 契约 |

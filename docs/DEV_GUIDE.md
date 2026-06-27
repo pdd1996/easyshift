@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.1 |
+| 文档版本 | v1.2 |
 | 关联文档 | [TECH_STACK.md](./TECH_STACK.md) · [DATABASE.md](./DATABASE.md) · [API.md](./API.md) |
 
 ---
@@ -189,9 +189,26 @@ WX_SECRET=真实小程序 Secret
 
 服务端已禁止 `NODE_ENV=production` 时开启 `WX_MOCK=true`；如误配会启动失败，避免线上接受伪造 openid。
 
-### 3.4 重置小程序绑定状态
+### 3.4 绑定、解绑与停用
 
-小程序“是否已绑定”由服务端 `users` 表中的 staff 绑定关系与本地 Token 共同影响。绑定关系不是 `users.status` 单独决定，而是 `role = staff` 且 `wx_openid`、`employee_id` 均有值。
+小程序“是否已绑定”由服务端 `users` 表中的 staff 绑定关系与本地 Token 共同影响。判定规则：`role = staff` 且 `wx_openid`、`employee_id` 均有值 → 已绑定。`users.status` 只表示账号是否可登录，不能单独代表绑定状态。
+
+以下三种操作**不是同一件事**，不要混用：
+
+| 操作 | 入口 | 服务端效果 | Web 列表 `bindingStatus` |
+|------|------|-----------|--------------------------|
+| 小程序解绑 | `POST /auth/miniprogram/unbind` | **删除** staff `users` 行；先更新 `token_valid_after`，再删行；旧 Token → `401` | 变为 `unbound` |
+| Web 停用员工 | `POST /employees/:id/deactivate` | `employees.status = inactive`；更新 staff `token_valid_after`；**保留** `wx_openid` / `employee_id` | 仍显示 `bound` |
+| 本地调试重置 | 下方 SQL（**仅开发环境**） | 清空 `wx_openid` / `employee_id`，**不删** `users` 行 | 变为 `unbound` |
+
+**状态字段语义**：
+
+- `users.status = disabled`：账号停用，不等于未绑定。
+- `employees.status = inactive`：员工档案停用，不等于清除微信绑定。
+
+**Web 管理员强制解绑**：v1 **尚未实现**（无 Web 端解绑接口）。换手机场景当前依赖小程序自助解绑（PRD MP-ME-02，P2）或运维手动处理；已绑定员工无法再次生成绑定码（`422 ALREADY_BOUND`）。
+
+#### 本地调试：重置为未绑定
 
 本地需要重新测试未绑定流程时，同时清两处：
 
@@ -203,7 +220,7 @@ WX_SECRET=真实小程序 Secret
    easyshift_employee
    ```
 
-2. MySQL 清理当前 mock openid 的 staff 绑定关系：
+2. MySQL 清理当前 mock openid 的 staff 绑定关系（**仅本地调试，不是生产解绑方式**）：
 
    ```sql
    UPDATE users
@@ -214,14 +231,13 @@ WX_SECRET=真实小程序 Secret
      AND wx_openid = 'mock_openid_local_dev';
    ```
 
-`users.status = disabled` 表示账号停用，不等于未绑定；`employees.status = inactive` 表示员工档案停用，也不等于清除微信绑定。需要模拟“未绑定”时，应清 `wx_openid` / `employee_id` 并让旧 Token 失效。
+#### 员工停用后的小程序行为
 
 员工被 Web 端停用后，小程序不应继续展示已发布班表：
 
-- 后端 `/auth/miniprogram/login` 对已停用员工返回 `bound=false`，不再签发 Token。
-- 后端 `/staff/me` 与 `/staff/schedule` 会拒绝停用员工的旧 Token，可能返回 `401` 或 `403`。
-- 小程序收到 `401` / `403` 后会清理 `easyshift_token`、`easyshift_expires_at`、`easyshift_employee`，并跳回绑定页。
-- Web 员工列表中“已绑定”只表示仍存在微信绑定关系；员工停用不等于解绑。换手机或重置绑定应走后续 Web 解绑 / 重置绑定流程。
+- `/auth/miniprogram/login`：对已停用员工返回 `bound: false`，不签发 Token（绑定关系仍在库中，但业务层拒绝）。
+- `/staff/me`、`/staff/schedule`：旧 Token 默认返回 `401`（`token_valid_after` 已更新）；若 Token 仍通过鉴权但员工已 inactive，业务层返回 `403`。
+- 小程序收到 `401` / `403` 后应清理 `easyshift_token`、`easyshift_expires_at`、`easyshift_employee`，并跳回绑定页。
 
 ---
 
@@ -291,5 +307,6 @@ WX_SECRET=真实小程序 Secret
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.2 | 2026-06-27 | 澄清小程序解绑 / Web 停用 / 本地 SQL 重置三种路径；标注 Web 强制解绑未实现 |
 | v1.1 | 2026-06-27 | 补充小程序绑定状态重置与状态字段语义 |
 | v1.0 | 2026-06-23 | 初版 |
