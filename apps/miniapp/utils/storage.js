@@ -37,10 +37,15 @@ function clearSession() {
   wx.removeStorageSync(STORAGE_KEYS.employee);
 }
 
+function updateEmployee(employee) {
+  wx.setStorageSync(STORAGE_KEYS.employee, employee);
+}
+
 module.exports = {
   getToken,
   getEmployee,
   isTokenValid,
   saveSession,
+  updateEmployee,
   clearSession,
 };

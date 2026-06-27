@@ -274,3 +274,40 @@ export async function miniProgramBind(
     employee: employeeInfo,
   };
 }
+
+export async function getStaffMe(employeeId: number) {
+  const employee = await loadBoundEmployeeInfo(employeeId);
+  return { employee };
+}
+
+export async function miniProgramUnbind(userId: number, employeeId: number | null) {
+  if (!employeeId) {
+    throw new AppError(403, 'FORBIDDEN', '账号未绑定员工');
+  }
+
+  const now = mysqlDatetime(new Date());
+
+  await db.transaction(async (tx) => {
+    const [user] = await tx
+      .select({ id: users.id, employeeId: users.employeeId })
+      .from(users)
+      .where(and(eq(users.id, userId), eq(users.role, 'staff')))
+      .limit(1);
+
+    if (!user?.employeeId) {
+      throw new AppError(403, 'FORBIDDEN', '账号未绑定员工');
+    }
+
+    await tx.update(users).set({ tokenValidAfter: now }).where(eq(users.id, userId));
+
+    const [deleteResult] = await tx
+      .delete(users)
+      .where(and(eq(users.id, userId), eq(users.role, 'staff')));
+
+    if (affectedRows(deleteResult) !== 1) {
+      throw new AppError(500, 'INTERNAL_ERROR', '解绑失败，请稍后重试');
+    }
+  });
+
+  return { ok: true as const };
+}

@@ -383,4 +383,105 @@ describe.skipIf(skipDbTests && !dbAvailable)('miniprogram binding API (AC-10)', 
     const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('ALREADY_BOUND');
   });
+
+  it('[s7] 解绑后旧 Token → 401', async () => {
+    const unbindRes = await app.request('/api/v1/employees', {
+      method: 'POST',
+      headers: adminHeaders(adminCookie),
+      body: JSON.stringify({
+        employeeNo: `B${runSuffix}7`,
+        name: '解绑测试员工',
+        phone: `13807${runSuffix}`,
+      }),
+    });
+    const unbindBody = (await unbindRes.json()) as { data: { id: number } };
+    const unbindEmployeeId = unbindBody.data.id;
+    createdEmployeeIds.push(unbindEmployeeId);
+
+    const bindingCode = await generateBindingCode(app, adminCookie, unbindEmployeeId);
+    const wxCode = `wx_unbind_s7_${runSuffix}`;
+    const phoneLastFour = `13807${runSuffix}`.slice(-4);
+
+    const bindRes = await app.request('/api/v1/auth/miniprogram/bind', {
+      method: 'POST',
+      headers: miniProgramJsonHeaders(),
+      body: JSON.stringify({ code: wxCode, bindingCode, phoneLastFour }),
+    });
+    expect(bindRes.status).toBe(200);
+    const bindBody = (await bindRes.json()) as { data: { token: string } };
+    const token = bindBody.data.token;
+
+    const meBefore = await app.request('/api/v1/staff/me', {
+      headers: staffHeaders(token),
+    });
+    expect(meBefore.status).toBe(200);
+
+    const unbindApiRes = await app.request('/api/v1/auth/miniprogram/unbind', {
+      method: 'POST',
+      headers: { ...miniProgramJsonHeaders(), ...staffHeaders(token) },
+      body: JSON.stringify({ confirm: true }),
+    });
+    expect(unbindApiRes.status).toBe(200);
+    const unbindApiBody = (await unbindApiRes.json()) as { data: { ok: boolean } };
+    expect(unbindApiBody.data.ok).toBe(true);
+
+    const meAfter = await app.request('/api/v1/staff/me', {
+      headers: staffHeaders(token),
+    });
+    expect(meAfter.status).toBe(401);
+
+    const scheduleAfter = await app.request('/api/v1/staff/schedule', {
+      headers: staffHeaders(token),
+    });
+    expect(scheduleAfter.status).toBe(401);
+
+    const loginRes = await app.request('/api/v1/auth/miniprogram/login', {
+      method: 'POST',
+      headers: miniProgramJsonHeaders(),
+      body: JSON.stringify({ code: wxCode }),
+    });
+    expect(loginRes.status).toBe(200);
+    const loginBody = (await loginRes.json()) as { data: { bound: boolean } };
+    expect(loginBody.data.bound).toBe(false);
+  });
+
+  it('GET /staff/me returns bound employee profile', async () => {
+    const profileRes = await app.request('/api/v1/employees', {
+      method: 'POST',
+      headers: adminHeaders(adminCookie),
+      body: JSON.stringify({
+        employeeNo: `B${runSuffix}8`,
+        name: '资料测试员工',
+        phone: `13808${runSuffix}`,
+      }),
+    });
+    const profileBody = (await profileRes.json()) as { data: { id: number } };
+    const profileEmployeeId = profileBody.data.id;
+    createdEmployeeIds.push(profileEmployeeId);
+
+    const bindingCode = await generateBindingCode(app, adminCookie, profileEmployeeId);
+    const wxCode = `wx_profile_me_${runSuffix}`;
+    const phoneLastFour = `13808${runSuffix}`.slice(-4);
+
+    const bindRes = await app.request('/api/v1/auth/miniprogram/bind', {
+      method: 'POST',
+      headers: miniProgramJsonHeaders(),
+      body: JSON.stringify({ code: wxCode, bindingCode, phoneLastFour }),
+    });
+    expect(bindRes.status).toBe(200);
+    const bindBody = (await bindRes.json()) as { data: { token: string } };
+
+    const meRes = await app.request('/api/v1/staff/me', {
+      headers: staffHeaders(bindBody.data.token),
+    });
+
+    expect(meRes.status).toBe(200);
+    const meBody = (await meRes.json()) as {
+      data: { employee: { id: number; name: string; employeeNo: string; departmentName: string } };
+    };
+    expect(meBody.data.employee.id).toBe(profileEmployeeId);
+    expect(meBody.data.employee.name).toBe('资料测试员工');
+    expect(meBody.data.employee.employeeNo).toBe(`B${runSuffix}8`);
+    expect(meBody.data.employee.departmentName).toBeTruthy();
+  });
 });

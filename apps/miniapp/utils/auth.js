@@ -94,6 +94,27 @@ async function bindAccount(bindingCode, phoneLastFour) {
   return data;
 }
 
+async function fetchStaffMe() {
+  const data = await request({
+    path: '/staff/me',
+    auth: true,
+  });
+
+  storage.updateEmployee(data.employee);
+  syncAppSession(true, data.employee);
+  return data.employee;
+}
+
+async function unbindAccount() {
+  await request({
+    path: '/auth/miniprogram/unbind',
+    method: 'POST',
+    auth: true,
+    data: { confirm: true },
+  });
+  clearBoundSession();
+}
+
 async function waitForAppAuth() {
   const app = getApp();
   if (app && app.authPromise) {
@@ -109,5 +130,7 @@ module.exports = {
   clearSession: clearBoundSession,
   silentLogin,
   bindAccount,
+  fetchStaffMe,
+  unbindAccount,
   waitForAppAuth,
 };

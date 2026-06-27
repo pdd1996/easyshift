@@ -19,9 +19,14 @@ function buildProfile(employee) {
   };
 }
 
+function isUnauthorizedError(err) {
+  return err && (err.code === 'UNAUTHORIZED' || err.statusCode === 401);
+}
+
 Page({
   data: {
     authChecking: true,
+    unbinding: false,
     name: '',
     employeeNo: '',
     departmentName: '',
@@ -34,7 +39,10 @@ Page({
 
   async onShow() {
     if (this.data.authChecking) return;
-    this.refreshProfile();
+    const verified = await this.verifyBinding();
+    if (verified) {
+      this.refreshProfile();
+    }
   },
 
   async ensureBound() {
@@ -52,12 +60,61 @@ Page({
       app.globalData.employee = auth.getEmployee();
     }
 
+    const verified = await this.verifyBinding();
+    if (!verified) return;
+
     this.setData({ authChecking: false });
     this.refreshProfile();
+  },
+
+  async verifyBinding() {
+    try {
+      await auth.fetchStaffMe();
+      return true;
+    } catch (err) {
+      if (isUnauthorizedError(err)) {
+        wx.reLaunch({ url: '/pages/bind/bind' });
+        return false;
+      }
+
+      wx.showToast({ title: err.message || '验证失败', icon: 'none' });
+      return true;
+    }
   },
 
   refreshProfile() {
     const employee = auth.getEmployee();
     this.setData(buildProfile(employee));
+  },
+
+  onUnbindTap() {
+    wx.showModal({
+      title: '确认解绑',
+      content: '解绑后需重新输入绑定码才能查看班表，是否继续？',
+      confirmText: '解绑',
+      confirmColor: '#e34d59',
+      success: async (res) => {
+        if (!res.confirm) return;
+        await this.handleUnbind();
+      },
+    });
+  },
+
+  async handleUnbind() {
+    this.setData({ unbinding: true });
+
+    try {
+      await auth.unbindAccount();
+      wx.reLaunch({ url: '/pages/bind/bind' });
+    } catch (err) {
+      if (isUnauthorizedError(err)) {
+        wx.reLaunch({ url: '/pages/bind/bind' });
+        return;
+      }
+
+      wx.showToast({ title: err.message || '解绑失败', icon: 'none' });
+    } finally {
+      this.setData({ unbinding: false });
+    }
   },
 });

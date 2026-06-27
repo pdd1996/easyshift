@@ -10,6 +10,19 @@
     <t-cell title="工号" note="{{employeeNo}}" />
     <t-cell title="科室" note="{{departmentName}}" />
   </t-cell-group>
+
+  <view class="actions">
+    <t-button
+      theme="light"
+      size="large"
+      block
+      loading="{{unbinding}}"
+      disabled="{{unbinding}}"
+      bind:tap="onUnbindTap"
+    >
+      解绑账号
+    </t-button>
+  </view>
 </view>
 
 <view class="loading-page" wx:else>
