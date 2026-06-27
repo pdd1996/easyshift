@@ -13,7 +13,14 @@ Page({
 
   async onLoad() {
     const globalData = await auth.waitForAppAuth();
-    if (globalData.isBound) {
+    const isBound = globalData.isBound || auth.isTokenValid();
+
+    if (isBound) {
+      const app = getApp();
+      if (app && !globalData.isBound) {
+        app.globalData.isBound = true;
+        app.globalData.employee = auth.getEmployee();
+      }
       wx.redirectTo({ url: '/pages/schedule/schedule' });
       return;
     }

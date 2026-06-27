@@ -24,23 +24,57 @@ function applyBoundSession(data) {
     expiresAt: data.expiresAt,
     employee: data.employee,
   });
+  syncAppSession(true, data.employee);
   return data;
 }
 
-async function silentLogin() {
-  const code = await getWxLoginCode();
-  const data = await request({
-    path: '/auth/miniprogram/login',
-    method: 'POST',
-    data: { code },
-  });
+function syncAppSession(isBound, employee) {
+  const app = getApp();
+  if (!app) return;
 
-  if (data.bound) {
-    applyBoundSession(data);
-    return { bound: true, employee: data.employee };
+  app.globalData.isBound = isBound;
+  app.globalData.employee = employee || null;
+}
+
+function clearBoundSession() {
+  storage.clearSession();
+  syncAppSession(false, null);
+}
+
+function localBoundSession() {
+  if (!storage.isTokenValid()) {
+    return null;
   }
 
-  storage.clearSession();
+  return { bound: true, employee: storage.getEmployee() };
+}
+
+async function silentLogin() {
+  try {
+    const code = await getWxLoginCode();
+    const data = await request({
+      path: '/auth/miniprogram/login',
+      method: 'POST',
+      data: { code },
+    });
+
+    if (data.bound) {
+      applyBoundSession(data);
+      return { bound: true, employee: data.employee };
+    }
+
+    clearBoundSession();
+    return { bound: false };
+  } catch (err) {
+    console.warn('[auth] silentLogin remote check failed', err);
+  }
+
+  const localSession = localBoundSession();
+  if (localSession) {
+    return localSession;
+  }
+
+  clearBoundSession();
   return { bound: false };
 }
 
@@ -72,7 +106,7 @@ module.exports = {
   getToken: storage.getToken,
   getEmployee: storage.getEmployee,
   isTokenValid: storage.isTokenValid,
-  clearSession: storage.clearSession,
+  clearSession: clearBoundSession,
   silentLogin,
   bindAccount,
   waitForAppAuth,

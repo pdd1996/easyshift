@@ -17,7 +17,11 @@ export async function exchangeCodeForOpenid(code: string): Promise<WeChatSession
     if (env.WX_MOCK_OPENID) {
       return { openid: env.WX_MOCK_OPENID };
     }
-    return { openid: `mock_openid_${code}` };
+    // 测试里用不同 code 模拟不同微信用户；本地开发用固定 openid，避免每次 wx.login 换 code 后绑定丢失
+    if (env.NODE_ENV === 'test') {
+      return { openid: `mock_openid_${code}` };
+    }
+    return { openid: 'mock_openid_local_dev' };
   }
 
   if (!env.WX_APPID || !env.WX_SECRET) {

@@ -1,6 +1,16 @@
 const { apiBaseUrl } = require('./config.js');
 const storage = require('./storage.js');
 
+function clearLocalSession() {
+  storage.clearSession();
+
+  const app = getApp();
+  if (!app) return;
+
+  app.globalData.isBound = false;
+  app.globalData.employee = null;
+}
+
 function request(options) {
   const { path, method = 'GET', data, auth: needAuth = false } = options;
 
@@ -35,7 +45,7 @@ function request(options) {
         };
 
         if (res.statusCode === 401 && needAuth) {
-          storage.clearSession();
+          clearLocalSession();
         }
 
         reject(error);

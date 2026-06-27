@@ -42,9 +42,17 @@ Page({
 
   async onLoad() {
     const globalData = await auth.waitForAppAuth();
-    if (!globalData.isBound) {
+    const isBound = globalData.isBound || auth.isTokenValid();
+
+    if (!isBound) {
       wx.redirectTo({ url: '/pages/bind/bind' });
       return;
+    }
+
+    const app = getApp();
+    if (app && !globalData.isBound) {
+      app.globalData.isBound = true;
+      app.globalData.employee = auth.getEmployee();
     }
 
     const employee = auth.getEmployee();
