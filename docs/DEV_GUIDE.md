@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.0 |
+| 文档版本 | v1.1 |
 | 关联文档 | [TECH_STACK.md](./TECH_STACK.md) · [DATABASE.md](./DATABASE.md) · [API.md](./API.md) |
 
 ---
@@ -69,7 +69,7 @@ docker run -d --name easyshift-mysql \
 | `WX_APPID` | 微信小程序 AppID | — |
 | `WX_SECRET` | 微信小程序 Secret | — |
 | `WX_MOCK` | 是否用本地假 openid 跳过微信 `code2session` | `true`（仅 development / test） |
-| `WX_MOCK_OPENID` | 本地联调固定 openid；不设时按 code 生成，便于测试多用户 | `mock_openid_local_dev` |
+| `WX_MOCK_OPENID` | 本地联调固定 openid；不设时 development 默认使用 `mock_openid_local_dev`，test 环境按 code 生成以模拟多用户 | `mock_openid_local_dev` |
 | `CORS_ORIGIN` | Web 开发地址 | `http://localhost:5173` |
 | `COOKIE_SECURE` | Cookie Secure（本地 false） | `false` |
 
@@ -189,6 +189,33 @@ WX_SECRET=真实小程序 Secret
 
 服务端已禁止 `NODE_ENV=production` 时开启 `WX_MOCK=true`；如误配会启动失败，避免线上接受伪造 openid。
 
+### 3.4 重置小程序绑定状态
+
+小程序“是否已绑定”由服务端 `users` 表中的 staff 绑定关系与本地 Token 共同影响。绑定关系不是 `users.status` 单独决定，而是 `role = staff` 且 `wx_openid`、`employee_id` 均有值。
+
+本地需要重新测试未绑定流程时，同时清两处：
+
+1. 微信开发者工具 Storage 删除：
+
+   ```text
+   easyshift_token
+   easyshift_expires_at
+   easyshift_employee
+   ```
+
+2. MySQL 清理当前 mock openid 的 staff 绑定关系：
+
+   ```sql
+   UPDATE users
+   SET wx_openid = NULL,
+       employee_id = NULL,
+       token_valid_after = NOW()
+   WHERE role = 'staff'
+     AND wx_openid = 'mock_openid_local_dev';
+   ```
+
+`users.status = disabled` 表示账号停用，不等于未绑定；`employees.status = inactive` 表示员工档案停用，也不等于清除微信绑定。需要模拟“未绑定”时，应清 `wx_openid` / `employee_id` 并让旧 Token 失效。
+
 ---
 
 ## 4. 常用命令
@@ -246,6 +273,7 @@ WX_SECRET=真实小程序 Secret
 | API 连不上 DB | `DATABASE_URL` 错误、MySQL 未启动 | 检查连接串与端口 |
 | Web 登录后 401 | Cookie 未带上、`CORS_ORIGIN` 不匹配 | 确认 axios `withCredentials`、API CORS |
 | 小程序绑定失败 | 合法域名、AppID/Secret 错误 | 开发环境关闭域名校验；检查 `.env` |
+| 小程序删除后仍显示已绑定 | 本地 Storage 或服务端 `users.wx_openid` / `users.employee_id` 仍保留 | 按 §3.4 同时清 Storage 与服务端绑定关系 |
 | migration 失败 | 与现有表冲突 | 开发库可 `drop` 重建；勿对生产库随意 drop |
 | 发布重复版本号 | 并发发布 | 见 [DATABASE.md](./DATABASE.md) 发布事务说明 |
 
@@ -255,4 +283,5 @@ WX_SECRET=真实小程序 Secret
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.1 | 2026-06-27 | 补充小程序绑定状态重置与状态字段语义 |
 | v1.0 | 2026-06-23 | 初版 |
