@@ -143,7 +143,7 @@ export function EmployeesPage() {
               停用
             </Button>
           )}
-          {record.status === 'active' && (
+          {record.status === 'active' && record.bindingStatus === 'unbound' && (
             <Button
               type="link"
               size="small"
