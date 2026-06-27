@@ -41,6 +41,13 @@ function clearBoundSession() {
   syncAppSession(false, null);
 }
 
+function isSessionInvalidError(err) {
+  if (!err) return false;
+  if (err.code === 'UNAUTHORIZED' || err.statusCode === 401) return true;
+  if (err.code === 'FORBIDDEN' || err.statusCode === 403) return true;
+  return false;
+}
+
 function localBoundSession() {
   if (!storage.isTokenValid()) {
     return null;
@@ -67,15 +74,35 @@ async function silentLogin() {
     return { bound: false };
   } catch (err) {
     console.warn('[auth] silentLogin remote check failed', err);
-  }
 
-  const localSession = localBoundSession();
-  if (localSession) {
-    return localSession;
+    if (isSessionInvalidError(err)) {
+      clearBoundSession();
+      return { bound: false };
+    }
+
+    if (err.code === 'NETWORK_ERROR') {
+      const localSession = localBoundSession();
+      if (localSession) {
+        return localSession;
+      }
+    }
   }
 
   clearBoundSession();
   return { bound: false };
+}
+
+async function verifyBoundSession() {
+  try {
+    await fetchStaffMe();
+    return true;
+  } catch (err) {
+    if (isSessionInvalidError(err)) {
+      clearBoundSession();
+      return false;
+    }
+    throw err;
+  }
 }
 
 async function bindAccount(bindingCode, phoneLastFour) {
@@ -128,7 +155,9 @@ module.exports = {
   getEmployee: storage.getEmployee,
   isTokenValid: storage.isTokenValid,
   clearSession: clearBoundSession,
+  isSessionInvalidError,
   silentLogin,
+  verifyBoundSession,
   bindAccount,
   fetchStaffMe,
   unbindAccount,

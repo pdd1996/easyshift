@@ -44,7 +44,7 @@ function request(options) {
           message: errBody && errBody.message ? errBody.message : '请求失败，请稍后重试',
         };
 
-        if (res.statusCode === 401 && needAuth) {
+        if ((res.statusCode === 401 || res.statusCode === 403) && needAuth) {
           clearLocalSession();
         }
 

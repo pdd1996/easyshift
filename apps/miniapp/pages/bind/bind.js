@@ -15,15 +15,21 @@ Page({
     const globalData = await auth.waitForAppAuth();
     const isBound = globalData.isBound || auth.isTokenValid();
 
-    if (isBound) {
-      const app = getApp();
-      if (app && !globalData.isBound) {
-        app.globalData.isBound = true;
-        app.globalData.employee = auth.getEmployee();
-      }
-      wx.switchTab({ url: '/pages/schedule/schedule' });
+    if (!isBound) {
+      this.setData({ authChecking: false });
       return;
     }
+
+    try {
+      const verified = await auth.verifyBoundSession();
+      if (verified) {
+        wx.switchTab({ url: '/pages/schedule/schedule' });
+        return;
+      }
+    } catch (err) {
+      wx.showToast({ title: err.message || '验证失败', icon: 'none' });
+    }
+
     this.setData({ authChecking: false });
   },
 

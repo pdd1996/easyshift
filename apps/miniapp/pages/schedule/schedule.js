@@ -49,11 +49,8 @@ Page({
       return;
     }
 
-    const app = getApp();
-    if (app && !globalData.isBound) {
-      app.globalData.isBound = true;
-      app.globalData.employee = auth.getEmployee();
-    }
+    const verified = await this.verifyAccess();
+    if (!verified) return;
 
     const employee = auth.getEmployee();
     const weekStart = dateUtil.weekStartFromDate(new Date());
@@ -65,6 +62,27 @@ Page({
       employeeName: employee ? employee.name : '',
     });
     await this.loadSchedule();
+  },
+
+  async onShow() {
+    if (this.data.authChecking) return;
+    const verified = await this.verifyAccess();
+    if (!verified) return;
+    await this.loadSchedule();
+  },
+
+  async verifyAccess() {
+    try {
+      const ok = await auth.verifyBoundSession();
+      if (!ok) {
+        wx.reLaunch({ url: '/pages/bind/bind' });
+        return false;
+      }
+      return true;
+    } catch (err) {
+      wx.showToast({ title: err.message || '验证失败', icon: 'none' });
+      return false;
+    }
   },
 
   async onPullDownRefresh() {
@@ -96,7 +114,7 @@ Page({
         isCurrentWeek: (data.weekStart || weekStart) === currentWeekStart,
       });
     } catch (err) {
-      if (err.code === 'UNAUTHORIZED') {
+      if (auth.isSessionInvalidError(err)) {
         wx.reLaunch({ url: '/pages/bind/bind' });
         return;
       }

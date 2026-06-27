@@ -19,10 +19,6 @@ function buildProfile(employee) {
   };
 }
 
-function isUnauthorizedError(err) {
-  return err && (err.code === 'UNAUTHORIZED' || err.statusCode === 401);
-}
-
 Page({
   data: {
     authChecking: true,
@@ -69,14 +65,13 @@ Page({
 
   async verifyBinding() {
     try {
-      await auth.fetchStaffMe();
-      return true;
-    } catch (err) {
-      if (isUnauthorizedError(err)) {
+      const ok = await auth.verifyBoundSession();
+      if (!ok) {
         wx.reLaunch({ url: '/pages/bind/bind' });
         return false;
       }
-
+      return true;
+    } catch (err) {
       wx.showToast({ title: err.message || '验证失败', icon: 'none' });
       return true;
     }
@@ -107,7 +102,7 @@ Page({
       await auth.unbindAccount();
       wx.reLaunch({ url: '/pages/bind/bind' });
     } catch (err) {
-      if (isUnauthorizedError(err)) {
+      if (auth.isSessionInvalidError(err)) {
         wx.reLaunch({ url: '/pages/bind/bind' });
         return;
       }

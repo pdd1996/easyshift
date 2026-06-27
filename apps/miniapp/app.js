@@ -18,8 +18,9 @@ App({
       this.globalData.employee = result.bound ? result.employee : null;
     } catch (err) {
       console.error('[app] initAuth failed', err);
-      this.globalData.isBound = auth.isTokenValid();
-      this.globalData.employee = auth.getEmployee();
+      auth.clearSession();
+      this.globalData.isBound = false;
+      this.globalData.employee = null;
     } finally {
       this.globalData.authReady = true;
     }
