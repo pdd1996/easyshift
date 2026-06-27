@@ -1,0 +1,54 @@
+---
+description: Documentation source-of-truth and sync checklist
+globs: README.md,docs/**/*.md,.cursor/rules/*.mdc,apps/api/src/**/*.{ts,tsx},apps/web/src/**/*.{ts,tsx},apps/miniapp/**/*.{ts,tsx,js},packages/shared-types/**/*.ts
+alwaysApply: false
+---
+
+# Documentation Sync
+
+When a change affects shared product or technical semantics, do not update only the file the user named.
+
+Applies when editing docs **or** auth/binding/employee/schedule/API-related code that may invalidate docs.
+
+## Source Of Truth
+
+| Domain | Authoritative doc / code |
+|--------|--------------------------|
+| Product scope, AC | `docs/PRD.md` |
+| HTTP contract, status codes, error codes | `docs/API.md` + `packages/shared-types` |
+| Schema, status fields, migrations | `docs/DATABASE.md` |
+| Auth, tokens, CSRF, permissions | `docs/SECURITY.md` |
+| Local setup, debugging, env | `docs/DEV_GUIDE.md` |
+| Test IDs, coverage mapping | `docs/TEST_PLAN.md` |
+| Deploy, backup, ops | `docs/DEPLOYMENT.md` |
+| Stack, monorepo, test commands | `docs/TECH_STACK.md` |
+
+`README.md` is index only; link to authoritative docs instead of duplicating behavior.
+
+## Topic → Must-Check
+
+| Topic | Check these (minimum) |
+|-------|------------------------|
+| Binding / unbind / `bindingStatus` | API, DATABASE, SECURITY, DEV_GUIDE, TEST_PLAN |
+| Employee deactivate / `inactive` | API, DATABASE, SECURITY, DEV_GUIDE, TEST_PLAN + related API tests |
+| Tokens / `token_valid_after` / 401 vs 403 | API, SECURITY, DATABASE, DEV_GUIDE |
+| Migrations / schema fields | DATABASE, DEV_GUIDE, API (if exposed), shared-types |
+| Schedule warnings / publish | API, TEST_PLAN, PRD |
+| Shared DTOs / enums | shared-types, API, MSW handlers if present |
+
+## Workflow
+
+1. Search repo for related terms (English + Chinese) before editing.
+2. Update the authoritative source first, then dependent docs with the **same semantics**.
+3. Do not mix: `users.status`, `employees.status`, `bindingStatus`, `token_valid_after`, `401`, `403`.
+4. Unimplemented features: state explicitly (e.g. "v1 未实现"); never imply an existing Web admin flow.
+5. Behavior contract changes: bump doc version + revision history; align tests in TEST_PLAN / test files.
+6. Final response: list docs checked or updated, and any related docs intentionally left unchanged.
+
+## Example
+
+Changing "deactivated employee login returns `bound: false`":
+
+- **Check**: `miniProgramLogin` in API code, `docs/API.md` §login, `docs/SECURITY.md` §2.2, `docs/DATABASE.md` §users, `docs/DEV_GUIDE.md` §3.4
+- **Do not** write "Web admin unbind" unless the route exists
+- **Distinguish**: unbind (delete `users` row) vs deactivate (keep wx binding, invalidate token) vs local SQL reset (dev only)
