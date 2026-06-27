@@ -21,7 +21,7 @@ Page({
         app.globalData.isBound = true;
         app.globalData.employee = auth.getEmployee();
       }
-      wx.redirectTo({ url: '/pages/schedule/schedule' });
+      wx.switchTab({ url: '/pages/schedule/schedule' });
       return;
     }
     this.setData({ authChecking: false });
@@ -78,7 +78,7 @@ Page({
       }
       this.showToast('绑定成功', 'success');
       setTimeout(() => {
-        wx.redirectTo({ url: '/pages/schedule/schedule' });
+        wx.switchTab({ url: '/pages/schedule/schedule' });
       }, 600);
     } catch (err) {
       this.showToast(err.message || '绑定失败，请重试');

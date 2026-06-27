@@ -1,8 +1,8 @@
 {
   "pages": [
     "pages/schedule/schedule",
-    "pages/bind/bind",
-    "pages/index/index"
+    "pages/me/me",
+    "pages/bind/bind"
   ],
   "darkmode": true,
   "themeLocation": "theme.json",
@@ -12,6 +12,26 @@
     "navigationBarTextStyle": "@navTxtStyle",
     "backgroundColor": "@bgColor",
     "backgroundTextStyle": "@bgTxtStyle"
+  },
+  "tabBar": {
+    "color": "@tabFontColor",
+    "selectedColor": "@tabSelectedColor",
+    "backgroundColor": "@tabBgColor",
+    "borderStyle": "@tabBorderStyle",
+    "list": [
+      {
+        "pagePath": "pages/schedule/schedule",
+        "text": "我的班表",
+        "iconPath": "assets/tab/schedule.png",
+        "selectedIconPath": "assets/tab/schedule-active.png"
+      },
+      {
+        "pagePath": "pages/me/me",
+        "text": "我的",
+        "iconPath": "assets/tab/me.png",
+        "selectedIconPath": "assets/tab/me-active.png"
+      }
+    ]
   },
   "sitemapLocation": "sitemap.json"
 }

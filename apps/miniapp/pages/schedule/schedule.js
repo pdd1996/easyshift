@@ -45,7 +45,7 @@ Page({
     const isBound = globalData.isBound || auth.isTokenValid();
 
     if (!isBound) {
-      wx.redirectTo({ url: '/pages/bind/bind' });
+      wx.reLaunch({ url: '/pages/bind/bind' });
       return;
     }
 
@@ -97,7 +97,7 @@ Page({
       });
     } catch (err) {
       if (err.code === 'UNAUTHORIZED') {
-        wx.redirectTo({ url: '/pages/bind/bind' });
+        wx.reLaunch({ url: '/pages/bind/bind' });
         return;
       }
       wx.showToast({ title: err.message || '加载失败', icon: 'none' });

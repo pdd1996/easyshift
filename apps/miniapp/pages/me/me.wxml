@@ -1,0 +1,17 @@
+<view class="page" wx:if="{{!authChecking}}">
+  <view class="profile-card">
+    <view class="avatar">{{avatarText}}</view>
+    <text class="profile-name">{{name}}</text>
+    <text class="profile-hint">员工信息</text>
+  </view>
+
+  <t-cell-group theme="card">
+    <t-cell title="姓名" note="{{name}}" />
+    <t-cell title="工号" note="{{employeeNo}}" />
+    <t-cell title="科室" note="{{departmentName}}" />
+  </t-cell-group>
+</view>
+
+<view class="loading-page" wx:else>
+  <t-loading theme="circular" size="40rpx" text="正在验证身份…" />
+</view>
