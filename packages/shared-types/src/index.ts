@@ -125,6 +125,34 @@ export interface StaffScheduleDto {
   days: StaffScheduleDayDto[];
 }
 
+export type ScheduleChangeLogAction =
+  | 'period_create'
+  | 'entry_upsert'
+  | 'entry_delete'
+  | 'copy_from_week'
+  | 'publish';
+
+export interface ScheduleChangeLogOperatorDto {
+  id: number;
+  phone: string | null;
+}
+
+export interface ScheduleChangeLogDto {
+  id: number;
+  periodId: number;
+  weekStart: string;
+  action: ScheduleChangeLogAction;
+  operator: ScheduleChangeLogOperatorDto;
+  detail: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ScheduleChangeLogFilterOptionsDto {
+  operators: ScheduleChangeLogOperatorDto[];
+  periods: Array<{ id: number; weekStart: string }>;
+  actions: ScheduleChangeLogAction[];
+}
+
 /** 计算 date 所在周的周一（Asia/Shanghai 日历日） */
 export function weekStartFromDate(date: Date): string {
   const shanghai = dayjs(date).utcOffset(8);

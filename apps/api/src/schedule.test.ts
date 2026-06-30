@@ -305,4 +305,66 @@ describe.skipIf(skipDbTests && !dbAvailable)('schedule API', () => {
     const gridBody = (await gridRes.json()) as { data: { entries: unknown[] } };
     expect(gridBody.data.entries).toHaveLength(0);
   });
+
+  it('[log1] lists department change logs with pagination and filters', async () => {
+    const listRes = await app.request('/api/v1/schedule/change-logs?page=1&pageSize=20', {
+      headers: adminHeaders(cookie),
+    });
+
+    expect(listRes.status).toBe(200);
+    const listBody = (await listRes.json()) as {
+      data: Array<{
+        id: number;
+        periodId: number;
+        weekStart: string;
+        action: string;
+        operator: { id: number; phone: string | null };
+      }>;
+      meta: { page: number; pageSize: number; total: number };
+    };
+
+    expect(listBody.meta.page).toBe(1);
+    expect(listBody.meta.pageSize).toBe(20);
+    expect(listBody.meta.total).toBeGreaterThanOrEqual(2);
+    expect(listBody.data.some((log) => log.periodId === periodId)).toBe(true);
+
+    const periodRes = await app.request(
+      `/api/v1/schedule/change-logs?periodId=${periodId}&page=1&pageSize=20`,
+      { headers: adminHeaders(cookie) },
+    );
+    expect(periodRes.status).toBe(200);
+    const periodBody = (await periodRes.json()) as {
+      data: Array<{ periodId: number; weekStart: string; action: string }>;
+    };
+    expect(periodBody.data.some((log) => log.action === 'entry_upsert')).toBe(true);
+    expect(periodBody.data.some((log) => log.action === 'entry_delete')).toBe(true);
+    expect(periodBody.data.every((log) => log.periodId === periodId)).toBe(true);
+    expect(periodBody.data.every((log) => log.weekStart === weekStart)).toBe(true);
+
+    const actionRes = await app.request(
+      `/api/v1/schedule/change-logs?periodId=${periodId}&action=entry_delete`,
+      { headers: adminHeaders(cookie) },
+    );
+    expect(actionRes.status).toBe(200);
+    const actionBody = (await actionRes.json()) as { data: Array<{ action: string }> };
+    expect(actionBody.data.length).toBeGreaterThan(0);
+    expect(actionBody.data.every((log) => log.action === 'entry_delete')).toBe(true);
+
+    const optionsRes = await app.request('/api/v1/schedule/change-logs/filter-options', {
+      headers: adminHeaders(cookie),
+    });
+    expect(optionsRes.status).toBe(200);
+    const optionsBody = (await optionsRes.json()) as {
+      data: { operators: unknown[]; periods: unknown[]; actions: string[] };
+    };
+    expect(optionsBody.data.actions).toContain('entry_upsert');
+    expect(optionsBody.data.periods.length).toBeGreaterThan(0);
+  });
+
+  it('[log1] returns 404 when filtering by unknown periodId', async () => {
+    const res = await app.request('/api/v1/schedule/change-logs?periodId=999999999', {
+      headers: adminHeaders(cookie),
+    });
+    expect(res.status).toBe(404);
+  });
 });

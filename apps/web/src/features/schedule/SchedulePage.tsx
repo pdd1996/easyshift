@@ -2,6 +2,7 @@ import { weekStartFromDate } from '@easyshift/shared-types';
 import { Alert, App, Button, Empty, Space, Spin, Tag, Typography, message } from 'antd';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   getApiErrorMessage,
   useCopyFromPreviousWeek,
@@ -66,7 +67,13 @@ function PeriodStatusTags({
 
 export function SchedulePage() {
   const { modal } = App.useApp();
-  const [weekStart, setWeekStart] = useState(() => weekStartFromDate(new Date()));
+  const [searchParams] = useSearchParams();
+  const weekStartParam = searchParams.get('weekStart');
+  const [weekStart, setWeekStart] = useState(() =>
+    weekStartParam && dayjs(weekStartParam).isValid()
+      ? weekStartParam
+      : weekStartFromDate(new Date()),
+  );
   const [publishedEditConfirmed, setPublishedEditConfirmed] = useState(false);
   const [warningsVisible, setWarningsVisible] = useState(false);
 

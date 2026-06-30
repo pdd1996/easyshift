@@ -7,6 +7,10 @@ import { copyFromPreviousWeek } from '../services/schedule/copy.js';
 import { deleteEntry, upsertEntries } from '../services/schedule/entry.js';
 import { getScheduleGrid } from '../services/schedule/grid.js';
 import { createPeriod, getPeriod, listPeriods } from '../services/schedule/period.js';
+import {
+  getChangeLogFilterOptions,
+  listChangeLogs,
+} from '../services/schedule/change-log.js';
 import { publishPeriod } from '../services/schedule/publish.js';
 import { validatePeriod } from '../services/schedule/validation.js';
 import { notImplemented } from '../lib/errors.js';
@@ -46,6 +50,25 @@ const copyFromPreviousWeekBodySchema = z.object({
   sourceWeekStart: dateStringSchema.optional(),
 });
 
+const changeLogActionSchema = z.enum([
+  'period_create',
+  'entry_upsert',
+  'entry_delete',
+  'copy_from_week',
+  'publish',
+]);
+
+const listChangeLogsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  from: dateStringSchema.optional(),
+  to: dateStringSchema.optional(),
+  periodId: z.coerce.number().int().positive().optional(),
+  weekStart: dateStringSchema.optional(),
+  action: changeLogActionSchema.optional(),
+  operatorId: z.coerce.number().int().positive().optional(),
+});
+
 export const scheduleRoutes = new Hono();
 
 scheduleRoutes.use('*', requireAdmin());
@@ -54,6 +77,19 @@ function parsePeriodId(value: string): number | null {
   const id = Number(value);
   return Number.isInteger(id) && id > 0 ? id : null;
 }
+
+scheduleRoutes.get('/change-logs/filter-options', async (c) => {
+  const department = await getDefaultDepartment();
+  const data = await getChangeLogFilterOptions(department.id);
+  return c.json({ data });
+});
+
+scheduleRoutes.get('/change-logs', zValidator('query', listChangeLogsQuerySchema), async (c) => {
+  const query = c.req.valid('query');
+  const department = await getDefaultDepartment();
+  const result = await listChangeLogs(department.id, query);
+  return c.json(result);
+});
 
 scheduleRoutes.get('/periods', zValidator('query', listPeriodsQuerySchema), async (c) => {
   const query = c.req.valid('query');
@@ -208,7 +244,4 @@ scheduleRoutes.post('/periods/:periodId/publish', async (c) => {
 });
 scheduleRoutes.get('/periods/:periodId/notification-text', async () =>
   notImplemented('GET /schedule/periods/:periodId/notification-text'),
-);
-scheduleRoutes.get('/periods/:periodId/change-logs', async () =>
-  notImplemented('GET /schedule/periods/:periodId/change-logs'),
 );

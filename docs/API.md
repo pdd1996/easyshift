@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.3 |
+| 文档版本 | v1.5 |
 | 关联文档 | [PRD.md](./PRD.md) · [DATABASE.md](./DATABASE.md) · [SECURITY.md](./SECURITY.md) |
 
 ---
@@ -576,9 +576,69 @@ v1 软警告均不阻断保存；发布时若存在任意 warning，需传 `ackn
 
 ## 9. 操作日志
 
-### GET `/schedule/periods/:periodId/change-logs`
+科室维度查询操作记录。Web admin。
 
-分页查询操作记录。Web admin。
+### GET `/schedule/change-logs`
+
+**查询参数**：
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `page` | number | 默认 1 |
+| `pageSize` | number | 默认 20，最大 100 |
+| `from` | date | 可选；时间范围起始（含），如最近 7 天由前端计算传入 |
+| `to` | date | 可选；时间范围结束（含）；「不限」时不传 `from`/`to` |
+| `periodId` | number | 可选；筛选某排班周期 |
+| `weekStart` | date | 可选；与 `periodId` 二选一即可 |
+| `action` | enum | 可选：`entry_upsert` / `entry_delete` / `copy_from_week` / `publish` / `period_create` |
+| `operatorId` | number | 可选 |
+
+**响应**：
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "periodId": 10,
+      "weekStart": "2026-06-22",
+      "action": "entry_upsert",
+      "operator": { "id": 1, "phone": "13800138000" },
+      "detail": {
+        "entries": [
+          { "employeeId": 1, "workDate": "2026-06-22", "shiftTypeId": 1, "note": null }
+        ]
+      },
+      "createdAt": "2026-06-24T10:00:00+08:00"
+    }
+  ],
+  "meta": { "page": 1, "pageSize": 20, "total": 42 }
+}
+```
+
+**说明**：
+
+- 数据范围限定为当前科室（`schedule_periods.department_id`）
+- 按 `created_at DESC, id DESC` 排序
+- 无效 `periodId`（非本科室或不存在）返回 `404`
+
+### GET `/schedule/change-logs/filter-options`
+
+返回筛选下拉选项：
+
+```json
+{
+  "data": {
+    "operators": [{ "id": 1, "phone": "13800138000" }],
+    "periods": [{ "id": 10, "weekStart": "2026-06-22" }],
+    "actions": ["period_create", "entry_upsert", "entry_delete", "copy_from_week", "publish"]
+  }
+}
+```
+
+- `operators`：本科室日志中出现过的操作人
+- `periods`：有日志记录的排班周期，按 `weekStart` 倒序
+- `actions`：固定枚举列表
 
 ---
 
@@ -656,6 +716,8 @@ v1 软警告均不阻断保存；发布时若存在任意 warning，需传 `ackn
 | `ShiftTypeDto` | 班次类型 API 形状（含 `kind`；`code`/`name` 为展示字段） |
 | `ScheduleEntryDto` | 排班条目 |
 | `ScheduleGridDto` | 整表响应 |
+| `ScheduleChangeLogDto` | 操作记录条目（含 `periodId`、`weekStart`） |
+| `ScheduleChangeLogFilterOptionsDto` | 操作记录筛选选项 |
 | `StaffScheduleDayDto` | 员工端单日班表 |
 | `ApiError` | 统一错误体 |
 | `weekStartFromDate(date)` | 计算所在周周一 |
@@ -674,6 +736,7 @@ v1 以本文档 + `shared-types` 为契约源。实现稳定后可导出 `docs/o
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.5 | 2026-06-30 | 操作记录改为科室级 `GET /schedule/change-logs`；新增 filter-options |
 | v1.3 | 2026-06-27 | 明确 login 未绑定条件、解绑删行、停用保留绑定及 401/403 语义 |
 | v1.2 | 2026-06-24 | 班次类型新增 `kind` 规则语义字段；排班 warnings 基于 kind 而非 code |
 | v1.1 | 2026-06-24 | 补充排班 warnings 代码表（WEB-VAL-02～04）、发布 `UNACKNOWLEDGED_WARNINGS` 说明 |

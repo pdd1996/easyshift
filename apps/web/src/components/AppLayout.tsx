@@ -14,13 +14,15 @@ export function AppLayout() {
   const selectedKey =
     location.pathname === '/employees'
       ? 'employees'
-      : location.pathname.startsWith('/schedule')
-        ? 'schedule'
-        : location.pathname.startsWith('/shift-types')
-          ? 'shifts'
-          : location.pathname.startsWith('/department')
-            ? 'department'
-            : 'dashboard';
+      : location.pathname.startsWith('/change-logs')
+        ? 'change-logs'
+        : location.pathname.startsWith('/schedule')
+          ? 'schedule'
+          : location.pathname.startsWith('/shift-types')
+            ? 'shifts'
+            : location.pathname.startsWith('/department')
+              ? 'department'
+              : 'dashboard';
 
   const logoutMutation = useMutation({
     mutationFn: logoutAdmin,
@@ -47,11 +49,13 @@ export function AppLayout() {
             if (key === 'employees') navigate('/employees');
             if (key === 'shifts') navigate('/shift-types');
             if (key === 'schedule') navigate('/schedule');
+            if (key === 'change-logs') navigate('/change-logs');
             if (key === 'department') navigate('/department');
           }}
           items={[
             { key: 'dashboard', label: '工作台' },
             { key: 'schedule', label: '排班表' },
+            { key: 'change-logs', label: '操作记录' },
             { key: 'employees', label: '员工管理' },
             { key: 'shifts', label: '班次类型' },
             { key: 'department', label: '科室设置' },
