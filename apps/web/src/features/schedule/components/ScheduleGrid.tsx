@@ -1,7 +1,8 @@
 import type { EmployeeDto, ScheduleEntryDto, ShiftTypeDto } from '@easyshift/shared-types';
 import { Button, Popover, Tag } from 'antd';
 import { useMemo, useState } from 'react';
-import { buildEntryMap, entryKey, formatWeekdayLabel, getWeekDates } from '../utils';
+import { buildEntryMap, entryKey, getWeekDates } from '../utils';
+import { ScheduleDateHeader } from './ScheduleDateHeader';
 
 interface ScheduleGridProps {
   weekStart: string;
@@ -120,15 +121,7 @@ export function ScheduleGrid({
               员工
             </th>
             {weekDates.map((workDate) => (
-              <th
-                key={workDate}
-                className="min-w-24 border-r border-gray-100 px-2 py-2 text-center font-medium text-gray-600 last:border-r-0"
-              >
-                <div>{formatWeekdayLabel(workDate)}</div>
-                <div className="text-xs font-normal text-gray-400">
-                  {workDate.slice(5).replace('-', '/')}
-                </div>
-              </th>
+              <ScheduleDateHeader key={workDate} workDate={workDate} />
             ))}
           </tr>
         </thead>

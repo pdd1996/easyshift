@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.2 |
+| 文档版本 | v1.4 |
 | 关联文档 | [TECH_STACK.md](./TECH_STACK.md) · [DATABASE.md](./DATABASE.md) · [API.md](./API.md) |
 
 ---
@@ -299,6 +299,42 @@ E2E 默认使用 `http://localhost:3000` 和 `http://localhost:5173`。若本地
 - 新 migration 提交前人工阅读 SQL
 - 发布、快照、覆盖统计等关键查询保留 `.toSQL()` 复核记录
 
+### 5.5 中国节假日日历数据（WEB-SCH-12）
+
+v1 排班表表头的周末 / 法定节假日 / 调休标记，**不经过 API**，由共享包内置配置驱动。
+
+| 项目 | 说明 |
+|------|------|
+| 配置数据 | `packages/shared-types/src/chinese-calendar-data.ts`（`CHINESE_CALENDAR_DATA`） |
+| 解析逻辑 | `packages/shared-types/src/chinese-calendar.ts`（`getCalendarDayHint`、`createCalendarDayHintResolver`） |
+| Web 表头组件 | `apps/web/src/features/schedule/components/ScheduleDateHeader.tsx` |
+| 当前覆盖年份 | `coveredYears: [2025, 2026]`（见配置内 `source` / `updatedAt` 元信息） |
+| 标记规则 | 法定节假日 → 节日名 Tag；调休上班 → 「班」；普通周末 → 「休」；工作日无 Tag |
+
+**何时更新**
+
+国务院公布新一年节假日安排后（通常每年 11 月前后），更新 `chinese-calendar-data.ts` 中的：
+
+1. `coveredYears`
+2. `holidayRanges`（放假区间）
+3. `compensatoryWorkDates`（调休上班日）
+4. `updatedAt`
+
+然后运行测试并发版：
+
+```bash
+pnpm --filter @easyshift/shared-types test
+pnpm --filter @easyshift/web test -- src/features/schedule/components/__tests__/ScheduleGrid.test.tsx
+```
+
+**超出覆盖年份的行为**
+
+未收录年份仅自动识别周六、周日为「休」，**不会**显示春节、国庆等法定节假日。进入新日历年前应补数据，避免排班表误导。
+
+**后续 API 扩展（v1 未实现）**
+
+若需不发版更新或支持科室自定义特殊日期，可新增日历 API，返回与 `ChineseCalendarDataSource` 相同结构；Web 侧改为 Provider 注入 `createCalendarDayHintResolver(apiData)`，失败时回退内置配置。详见 [PRD.md](./PRD.md) WEB-SCH-12 约束。
+
 ---
 
 ## 6. 故障排查
@@ -319,6 +355,7 @@ E2E 默认使用 `http://localhost:3000` 和 `http://localhost:5173`。若本地
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.4 | 2026-06-30 | 补充 WEB-SCH-12 中国节假日内置配置维护说明 |
 | v1.3 | 2026-06-30 | 补充 Playwright E2E 浏览器安装、自动启动服务与端口占用说明 |
 | v1.2 | 2026-06-27 | 澄清小程序解绑 / Web 停用 / 本地 SQL 重置三种路径；标注 Web 强制解绑未实现 |
 | v1.1 | 2026-06-27 | 补充小程序绑定状态重置与状态字段语义 |

@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.1 |
+| 文档版本 | v1.6 |
 | 创建日期 | 2026-06-20 |
 | 关联文档 | [PRD.md](./PRD.md) · [TECH_STACK.md](./TECH_STACK.md) |
 | 适用范围 | v1.0 MVP（Web 管理端 + Hono API + 微信小程序） |
@@ -203,7 +203,7 @@ easyshift/
 
 ### 5.4 排班表（核心）
 
-**PRD**：WEB-SCH-01～12 · **AC**：AC-03、AC-06 · **文件**：`apps/web/src/features/schedule/test-spec.md`
+**PRD**：WEB-SCH-01～12 · **AC**：AC-03、AC-06 · **文件**：`apps/web/src/features/schedule/components/__tests__/ScheduleGrid.test.tsx`、`packages/shared-types/src/__tests__/chinese-calendar.test.ts`
 
 | ID | 类型 | PRD | 断言 | 测试 |
 |----|------|-----|------|------|
@@ -212,7 +212,7 @@ easyshift/
 | r3 | 渲染 | WEB-SCH-09 | 单元格展示班次简称与配置颜色 | COMP |
 | r4 | 渲染 | WEB-SCH-10 / AC-06 | 每日各班次「已排/最低」统计行 | COMP |
 | r5 | 渲染 | WEB-STAT-03 / AC-06 | 未达标单元格/行高亮 | COMP |
-| r6 | 渲染 | WEB-SCH-12 | 日期表头展示周末、法定节假日、调休/放假标记 | COMP |
+| r6 | 渲染 | WEB-SCH-12 | 表头展示法定节日名（如「端午」「春节」）、普通周末「休」、调休上班「班」；节日优先于周末 | COMP |
 | r7 | 渲染 | WEB-SCH-10 | 覆盖统计隐藏 `0/0`；`min=0` 且已排人数 > 0 时仅展示人数 | COMP |
 | i1 | 交互 | WEB-SCH-02 / AC-03 | 点击空格弹出班次选择，选中后格内更新 | COMP + E2E |
 | i2 | 交互 | WEB-SCH-02 | 支持清空单元格班次 | COMP |
@@ -452,6 +452,7 @@ on: push main / release
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.6 | 2026-06-30 | WEB-SCH-12 r6 已实现；补充日历单测路径与断言说明 |
 | v1.5 | 2026-06-30 | 同步首批 Playwright E2E 实现：E2E-01/04/05、webServer 启动方式与隔离周次约定 |
 | v1.4 | 2026-06-24 | 补充小程序 TDesign 与深色模式手工验收项 |
 | v1.3 | 2026-06-24 | 班次类型 `kind`、规则校验与 code 解耦；迁移 0002 说明 |

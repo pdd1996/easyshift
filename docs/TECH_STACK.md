@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.5 |
+| 文档版本 | v1.7 |
 | 创建日期 | 2026-06-20 |
 | 文档状态 | 已定稿 |
 | 关联文档 | [PRD.md](./PRD.md) |
@@ -229,7 +229,7 @@ easyshift/
 │       ├── drizzle.config.ts
 │       └── package.json
 ├── packages/
-│   └── shared-types/            # 共享类型、枚举、常量
+│   └── shared-types/            # 共享类型、枚举、常量；含中国节假日内置配置（WEB-SCH-12）
 ├── docs/
 │   ├── PRD.md
 │   ├── TECH_STACK.md
@@ -256,6 +256,16 @@ easyshift/
 | 发布 | Drizzle transaction + `schedule_publish_snapshots` | 4.1.8 发布 |
 | 校验 | Service 层规则函数 | 4.1.6 冲突校验 |
 | 审计 | Drizzle `schedule_change_logs` | 4.1.9 操作记录 |
+
+**共享包日历（WEB-SCH-12，v1 无 API）**
+
+| 模块 | 落点 | 说明 |
+|------|------|------|
+| 日历配置 | `packages/shared-types/src/chinese-calendar-data.ts` | 内置 `ChineseCalendarDataSource`；当前覆盖 2025–2026 |
+| 日历解析 | `packages/shared-types/src/chinese-calendar.ts` | `getCalendarDayHint` / `createCalendarDayHintResolver` |
+| Web 表头 | `apps/web/src/features/schedule/components/ScheduleDateHeader.tsx` | 消费共享包解析结果 |
+
+v1 不经过 Hono API；后续若需动态下发，API 应返回与 `ChineseCalendarDataSource` 相同 schema。维护方式见 [DEV_GUIDE.md](./DEV_GUIDE.md) §5.5。
 
 ---
 
@@ -367,6 +377,7 @@ Ant Design 组件测试默认使用 `jsdom`，测试 setup 中统一 polyfill `R
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.7 | 2026-06-30 | 补充 WEB-SCH-12 中国节假日内置配置与 shared-types 落点 |
 | v1.6 | 2026-06-30 | 补充 Playwright E2E webServer 启动约定 |
 | v1.5 | 2026-06-24 | 小程序 UI 定稿为 TDesign Miniprogram；明确深色模式适配方案与 v1 范围 |
 | v1.4 | 2026-06-20 | 修正测试约定中的 E2E、MSW 与组件测试环境说明 |

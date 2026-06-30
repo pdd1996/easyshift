@@ -136,3 +136,13 @@ export function weekStartFromDate(date: Date): string {
 export function isMonday(dateStr: string): boolean {
   return dayjs(dateStr).day() === 1;
 }
+
+export type { CalendarDayHint } from './chinese-calendar.js';
+export type { CalendarHolidayRange, ChineseCalendarDataSource } from './chinese-calendar-data.js';
+export {
+  createCalendarDayHintResolver,
+  getCalendarDayHint,
+  getCalendarDayLabel,
+  getChineseCalendarDataSource,
+  isChineseCalendarYearCovered,
+} from './chinese-calendar.js';
