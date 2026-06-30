@@ -2,12 +2,18 @@
   "name": "@easyshift/e2e",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "test": "playwright test",
+    "postinstall": "playwright install chromium",
     "lint": "echo \"no lint configured\"",
-    "typecheck": "echo \"no typecheck configured\""
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@playwright/test": "^1.53.1"
+    "@easyshift/shared-types": "workspace:*",
+    "@playwright/test": "^1.53.1",
+    "@types/node": "^22.15.32",
+    "dayjs": "^1.11.13",
+    "typescript": "^5.8.3"
   }
 }
