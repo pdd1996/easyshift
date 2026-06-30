@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminSession } from '@/features/auth/api';
 import { type PeriodDto, useSchedulePeriods } from '@/features/schedule/api';
-import { formatWeekRange } from '@/features/schedule/utils';
 
 function getWeekScheduleStatus(period: PeriodDto | null | undefined): {
   label: string;
@@ -81,7 +80,6 @@ export function DashboardPage() {
 
   const currentPeriod = periods?.find((period) => period.weekStart === currentWeekStart) ?? null;
   const weekStatus = getWeekScheduleStatusTag(currentPeriod, periodsIsError);
-  const weekRangeLabel = formatWeekRange(currentWeekStart);
 
   return (
     <div className="space-y-6">
@@ -89,9 +87,7 @@ export function DashboardPage() {
         <Typography.Title level={3} className="!mb-1">
           工作台
         </Typography.Title>
-        <Typography.Paragraph type="secondary" className="!mb-0">
-          {session?.department.name ?? '当前科室'} · {weekRangeLabel}
-        </Typography.Paragraph>
+        <div className="h-[22px]" aria-hidden />
       </div>
 
       <Row gutter={16}>

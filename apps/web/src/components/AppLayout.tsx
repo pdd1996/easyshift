@@ -4,6 +4,8 @@ import {
   AppstoreOutlined,
   CalendarOutlined,
   HistoryOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   SettingOutlined,
   TagsOutlined,
   TeamOutlined,
@@ -74,10 +76,9 @@ export function AppLayout() {
             type="text"
             size="small"
             aria-label={collapsed ? '展开导航' : '收起导航'}
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed((value) => !value)}
-          >
-            {collapsed ? '»' : '«'}
-          </Button>
+          />
         </div>
         <Menu
           mode="inline"
