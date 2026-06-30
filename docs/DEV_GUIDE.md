@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.4 |
+| 文档版本 | v1.5 |
 | 关联文档 | [TECH_STACK.md](./TECH_STACK.md) · [DATABASE.md](./DATABASE.md) · [API.md](./API.md) |
 
 ---
@@ -17,7 +17,7 @@
 | 微信开发者工具 | 最新稳定版（小程序开发） |
 | 浏览器 | Chrome / Edge 最新两个大版本 |
 
-可选：Navicat（审查表结构与数据）、Docker（本地 MySQL）。
+可选：Navicat（审查表结构与数据）。Docker 仅用于 [ECS 线上部署](../deploy/README.md)，本地开发不需要。
 
 ---
 
@@ -31,9 +31,9 @@ cd easyshift
 pnpm install
 ```
 
-### 2.2 MySQL
+### 2.2 MySQL（本机安装，推荐）
 
-**方式 A：本机 MySQL**
+Windows / macOS 安装 [MySQL 8.0](https://dev.mysql.com/downloads/mysql/) 后，用客户端或命令行执行：
 
 ```sql
 CREATE DATABASE easyshift_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -42,17 +42,13 @@ GRANT ALL PRIVILEGES ON easyshift_dev.* TO 'easyshift'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-**方式 B：Docker**
+`apps/api/.env` 中 `DATABASE_URL` 指向本机即可，例如：
 
-```bash
-docker run -d --name easyshift-mysql \
-  -e MYSQL_ROOT_PASSWORD=root \
-  -e MYSQL_DATABASE=easyshift_dev \
-  -e MYSQL_USER=easyshift \
-  -e MYSQL_PASSWORD=easyshift \
-  -p 3306:3306 \
-  mysql:8.0
+```text
+mysql://easyshift:your_password@localhost:3306/easyshift_dev
 ```
+
+集成测试会额外使用 `easyshift_test` 库（见 §2.4）；首次跑 `pnpm test:api` 前需建同名库并授权，或让测试库与 dev 库共用同一套 migrate。
 
 ### 2.3 环境变量
 
@@ -355,6 +351,7 @@ pnpm --filter @easyshift/web test -- src/features/schedule/components/__tests__/
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.5 | 2026-06-30 | 本地开发默认本机 MySQL；Docker 仅用于 ECS 部署 |
 | v1.4 | 2026-06-30 | 补充 WEB-SCH-12 中国节假日内置配置维护说明 |
 | v1.3 | 2026-06-30 | 补充 Playwright E2E 浏览器安装、自动启动服务与端口占用说明 |
 | v1.2 | 2026-06-27 | 澄清小程序解绑 / Web 停用 / 本地 SQL 重置三种路径；标注 Web 强制解绑未实现 |

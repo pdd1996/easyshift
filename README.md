@@ -14,6 +14,7 @@
 | [docs/API.md](./docs/API.md) | REST 接口契约、错误码 |
 | [docs/SECURITY.md](./docs/SECURITY.md) | 鉴权、权限、安全约定 |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | 部署、备份、运维 |
+| [deploy/README.md](./deploy/README.md) | Docker Compose + GitHub Actions 上线步骤 |
 
 ## 技术栈（v1）
 

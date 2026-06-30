@@ -7,6 +7,8 @@
 
 v1 采用简单部署：静态 Web + 单进程 API + MySQL，不要求 Kubernetes。
 
+**可执行骨架**（Docker Compose + GitHub Actions）：见仓库根目录 [deploy/README.md](../deploy/README.md)。
+
 ---
 
 ## 1. 环境划分
@@ -245,4 +247,5 @@ mysqldump -u backup -p --single-transaction easyshift_prod > backup_$(date +%F).
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.1 | 2026-06-30 | 补充 Docker Compose + GitHub Actions 部署骨架链接 |
 | v1.0 | 2026-06-23 | 初版 |
