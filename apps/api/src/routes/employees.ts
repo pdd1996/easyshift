@@ -25,6 +25,11 @@ const updateEmployeeSchema = createEmployeeSchema.extend({
 
 const listQuerySchema = z.object({
   status: z.enum(['active', 'inactive']).optional(),
+  employeeNo: z.string().trim().min(1).max(20).optional(),
+  name: z.string().trim().min(1).max(20).optional(),
+  phone: z.string().trim().min(1).max(20).optional(),
+  title: z.string().trim().min(1).max(50).optional(),
+  bindingStatus: z.enum(['bound', 'unbound']).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });

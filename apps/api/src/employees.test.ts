@@ -88,6 +88,45 @@ describe.skipIf(skipDbTests && !dbAvailable)('employees API', () => {
     expect(body.data.some((e) => e.employeeNo === primaryEmployeeNo)).toBe(true);
   });
 
+  it('filters employees by name and status', async () => {
+    const res = await app.request(
+      `/api/v1/employees?name=${encodeURIComponent('张三')}&status=active`,
+      { headers: adminHeaders(cookie) },
+    );
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: Array<{ name: string; status: string }>;
+    };
+    expect(body.data.length).toBeGreaterThanOrEqual(1);
+    expect(body.data.every((e) => e.name.includes('张三') && e.status === 'active')).toBe(true);
+  });
+
+  it('filters employees by binding status', async () => {
+    const createRes = await app.request('/api/v1/employees', {
+      method: 'POST',
+      headers: adminHeaders(cookie),
+      body: JSON.stringify({
+        employeeNo: `T${runSuffix}U`,
+        name: '未绑定员工',
+        phone: `13902${runSuffix}`,
+      }),
+    });
+    const createBody = (await createRes.json()) as { data: { id: number } };
+    createdEmployeeIds.push(createBody.data.id);
+
+    const unboundRes = await app.request('/api/v1/employees?bindingStatus=unbound&name=未绑定', {
+      headers: adminHeaders(cookie),
+    });
+    expect(unboundRes.status).toBe(200);
+    const unboundBody = (await unboundRes.json()) as {
+      data: Array<{ name: string; bindingStatus: string }>;
+    };
+    expect(unboundBody.data.some((e) => e.name === '未绑定员工' && e.bindingStatus === 'unbound')).toBe(
+      true,
+    );
+  });
+
   it('deactivates an employee', async () => {
     const listRes = await app.request('/api/v1/employees', {
       headers: adminHeaders(cookie),

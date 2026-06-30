@@ -11,9 +11,10 @@ import {
   Typography,
   message,
 } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { EmployeeDto } from '@easyshift/shared-types';
-import { useState } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import {
   getApiErrorMessage,
   useCreateEmployee,
@@ -25,12 +26,24 @@ import {
 } from './api';
 
 type FormMode = 'create' | 'edit';
+type TextFilterKey = 'employeeNo' | 'name' | 'phone' | 'title';
 
 export function EmployeesPage() {
   const { modal } = App.useApp();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | undefined>(undefined);
+  const [bindingStatusFilter, setBindingStatusFilter] = useState<'bound' | 'unbound' | undefined>(
+    undefined,
+  );
+  const [employeeNoInput, setEmployeeNoInput] = useState('');
+  const [employeeNo, setEmployeeNo] = useState<string | undefined>(undefined);
+  const [nameInput, setNameInput] = useState('');
+  const [name, setName] = useState<string | undefined>(undefined);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phone, setPhone] = useState<string | undefined>(undefined);
+  const [titleInput, setTitleInput] = useState('');
+  const [title, setTitle] = useState<string | undefined>(undefined);
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<FormMode>('create');
   const [editingEmployee, setEditingEmployee] = useState<EmployeeDto | null>(null);
@@ -38,7 +51,16 @@ export function EmployeesPage() {
 
   const [form] = Form.useForm<EmployeeFormValues>();
 
-  const { data, isLoading } = useEmployees({ status: statusFilter, page, pageSize });
+  const { data, isLoading } = useEmployees({
+    status: statusFilter,
+    employeeNo,
+    name,
+    phone,
+    title,
+    bindingStatus: bindingStatusFilter,
+    page,
+    pageSize,
+  });
   const createMutation = useCreateEmployee();
   const updateMutation = useUpdateEmployee();
   const deactivateMutation = useDeactivateEmployee();
@@ -105,6 +127,39 @@ export function EmployeesPage() {
       message.error(getApiErrorMessage(error));
     }
   };
+
+  const resetPage = () => setPage(1);
+
+  const normalizeTextFilter = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed || undefined;
+  };
+
+  const applyTextFilters = (overrides: Partial<Record<TextFilterKey, string>> = {}) => {
+    setEmployeeNo(normalizeTextFilter(overrides.employeeNo ?? employeeNoInput));
+    setName(normalizeTextFilter(overrides.name ?? nameInput));
+    setPhone(normalizeTextFilter(overrides.phone ?? phoneInput));
+    setTitle(normalizeTextFilter(overrides.title ?? titleInput));
+    resetPage();
+  };
+
+  const textSearchProps = (
+    input: string,
+    setInput: (value: string) => void,
+    key: TextFilterKey,
+  ) => ({
+    allowClear: true as const,
+    enterButton: <SearchOutlined />,
+    value: input,
+    onChange: (e: ChangeEvent<HTMLInputElement>) => {
+      const nextValue = e.target.value;
+      setInput(nextValue);
+      if (!nextValue) {
+        applyTextFilters({ [key]: '' });
+      }
+    },
+    onSearch: (value: string) => applyTextFilters({ [key]: value }),
+  });
 
   const columns: ColumnsType<EmployeeDto> = [
     { title: '工号', dataIndex: 'employeeNo', width: 100 },
@@ -174,19 +229,53 @@ export function EmployeesPage() {
         </Button>
       </div>
 
-      <Space>
+      <Space wrap>
+        <Input.Search
+          placeholder="工号"
+          style={{ width: 160 }}
+          {...textSearchProps(employeeNoInput, setEmployeeNoInput, 'employeeNo')}
+        />
+        <Input.Search
+          placeholder="姓名"
+          style={{ width: 160 }}
+          {...textSearchProps(nameInput, setNameInput, 'name')}
+        />
+        <Input.Search
+          placeholder="手机号"
+          style={{ width: 220 }}
+          {...textSearchProps(phoneInput, setPhoneInput, 'phone')}
+        />
+        <Input.Search
+          placeholder="岗位"
+          style={{ width: 160 }}
+          {...textSearchProps(titleInput, setTitleInput, 'title')}
+        />
         <Select
           allowClear
-          placeholder="筛选状态"
-          style={{ width: 140 }}
+          placeholder="在职状态"
+          style={{ width: 120 }}
           value={statusFilter}
           onChange={(v) => {
             setStatusFilter(v);
-            setPage(1);
+            resetPage();
           }}
           options={[
             { label: '在职', value: 'active' },
             { label: '停用', value: 'inactive' },
+          ]}
+        />
+        <Select
+          allowClear
+          placeholder="绑定状态"
+          style={{ width: 120 }}
+          value={bindingStatusFilter}
+          onChange={(v) => {
+            setBindingStatusFilter(v);
+            resetPage();
+          }}
+          options={[
+            { label: '已绑定', value: 'bound' },
+            { label: '未绑定', value: 'unbound' },
           ]}
         />
       </Space>

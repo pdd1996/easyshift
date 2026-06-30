@@ -24,7 +24,18 @@ export interface BindingCodeResult {
   expiresAt: string;
 }
 
-export function useEmployees(params: { status?: EmployeeStatus; page: number; pageSize: number }) {
+export interface EmployeeListParams {
+  status?: EmployeeStatus;
+  employeeNo?: string;
+  name?: string;
+  phone?: string;
+  title?: string;
+  bindingStatus?: 'bound' | 'unbound';
+  page: number;
+  pageSize: number;
+}
+
+export function useEmployees(params: EmployeeListParams) {
   return useQuery({
     queryKey: ['employees', params],
     queryFn: async () => {

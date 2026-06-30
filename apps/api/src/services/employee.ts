@@ -1,6 +1,17 @@
 import type { EmployeeDto } from '@easyshift/shared-types';
 import bcrypt from 'bcryptjs';
-import { and, count, desc, eq, inArray, isNotNull, ne } from 'drizzle-orm';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  like,
+  ne,
+  notExists,
+} from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { employeeBindingCodes, employees, users } from '../db/schema/index.js';
 import {
@@ -25,6 +36,11 @@ export interface UpdateEmployeeInput extends CreateEmployeeInput {
 
 export interface ListEmployeesQuery {
   status?: 'active' | 'inactive';
+  employeeNo?: string;
+  name?: string;
+  phone?: string;
+  title?: string;
+  bindingStatus?: 'bound' | 'unbound';
   page: number;
   pageSize: number;
 }
@@ -115,10 +131,40 @@ async function getEmployeeRow(departmentId: number, id: number) {
   return row;
 }
 
+function boundStaffSubquery() {
+  return db
+    .select({ id: users.id })
+    .from(users)
+    .where(
+      and(
+        eq(users.employeeId, employees.id),
+        eq(users.role, 'staff'),
+        isNotNull(users.wxOpenid),
+      ),
+    );
+}
+
 export async function listEmployees(departmentId: number, query: ListEmployeesQuery) {
   const conditions = [eq(employees.departmentId, departmentId)];
   if (query.status) {
     conditions.push(eq(employees.status, query.status));
+  }
+  if (query.employeeNo) {
+    conditions.push(like(employees.employeeNo, `%${query.employeeNo}%`));
+  }
+  if (query.name) {
+    conditions.push(like(employees.name, `%${query.name}%`));
+  }
+  if (query.phone) {
+    conditions.push(like(employees.phone, `%${query.phone}%`));
+  }
+  if (query.title) {
+    conditions.push(like(employees.title, `%${query.title}%`));
+  }
+  if (query.bindingStatus === 'bound') {
+    conditions.push(exists(boundStaffSubquery()));
+  } else if (query.bindingStatus === 'unbound') {
+    conditions.push(notExists(boundStaffSubquery()));
   }
 
   const whereClause = and(...conditions);

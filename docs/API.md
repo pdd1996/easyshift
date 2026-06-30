@@ -250,7 +250,7 @@
 
 员工列表。
 
-**查询参数**：`status`（`active`/`inactive`）、`page`、`pageSize`
+**查询参数**：`status`（`active`/`inactive`）、`employeeNo`（模糊匹配工号）、`name`（模糊匹配姓名）、`phone`（模糊匹配手机号）、`title`（模糊匹配岗位）、`bindingStatus`（`bound`/`unbound`）、`page`、`pageSize`
 
 **响应项字段**：`id`、`employeeNo`、`name`、`title`、`phone`、`status`、`bindingStatus`（`bound`/`unbound`）
 
