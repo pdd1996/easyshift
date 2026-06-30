@@ -137,14 +137,21 @@ export class AdminApiClient {
     return body.data;
   }
 
-  async ensureDayShiftType(code = 'D'): Promise<ShiftTypeRecord> {
+  async ensureShiftType(
+    code: string,
+    fallback: Parameters<AdminApiClient['createShiftType']>[0],
+  ): Promise<ShiftTypeRecord> {
     const shiftTypes = await this.listShiftTypes();
     const existing = shiftTypes.find((item) => item.code === code && item.status === 'active');
     if (existing) {
       return existing;
     }
 
-    return this.createShiftType({
+    return this.createShiftType(fallback);
+  }
+
+  async ensureDayShiftType(code = 'D'): Promise<ShiftTypeRecord> {
+    return this.ensureShiftType(code, {
       code,
       name: '白班',
       kind: 'day',
@@ -153,6 +160,19 @@ export class AdminApiClient {
       color: '#4CAF50',
       minRequiredCount: 0,
       sortOrder: 99,
+    });
+  }
+
+  async ensureNightShiftType(code = 'N'): Promise<ShiftTypeRecord> {
+    return this.ensureShiftType(code, {
+      code,
+      name: '大夜班',
+      kind: 'night',
+      startTime: '20:00:00',
+      durationMinutes: 720,
+      color: '#3F51B5',
+      minRequiredCount: 2,
+      sortOrder: 98,
     });
   }
 

@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 export async function assignShiftInGrid(
@@ -28,7 +28,7 @@ export async function assignShiftInGrid(
   await expectShiftInCell(page, employeeName, weekdayIndex, shiftCode);
 }
 
-export async function publishCurrentPeriod(page: Page): Promise<void> {
+export async function openPublishDialog(page: Page): Promise<Locator> {
   const publishButton = page.getByRole('button', { name: '发布本周期' });
   await publishButton.waitFor({ state: 'visible' });
   await expect(publishButton).toBeEnabled();
@@ -36,16 +36,39 @@ export async function publishCurrentPeriod(page: Page): Promise<void> {
 
   const publishDialog = page.getByRole('dialog', { name: '发布本周期' });
   await publishDialog.waitFor({ state: 'visible' });
+  return publishDialog;
+}
 
+export async function confirmPublishDialog(publishDialog: Locator): Promise<void> {
   const confirmButton = publishDialog.getByRole('button', {
     name: /确\s*认(并)?发\s*布/,
   });
   await confirmButton.click();
+}
 
+export async function dismissPublishSuccessDialog(page: Page): Promise<void> {
   const successDialog = page.getByRole('dialog', { name: '发布成功' });
   if (await successDialog.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await successDialog.getByRole('button', { name: /知\s*道\s*了/ }).click();
   }
+}
+
+export async function publishCurrentPeriod(page: Page): Promise<void> {
+  const publishDialog = await openPublishDialog(page);
+  await confirmPublishDialog(publishDialog);
+  await dismissPublishSuccessDialog(page);
+}
+
+export async function readNotificationText(page: Page): Promise<string> {
+  const successDialog = page.getByRole('dialog', { name: '发布成功' });
+  await successDialog.waitFor({ state: 'visible' });
+  const textBlock = successDialog.locator('.whitespace-pre-wrap');
+  return ((await textBlock.textContent()) ?? '').trim();
+}
+
+export async function copyNotificationText(page: Page): Promise<void> {
+  const successDialog = page.getByRole('dialog', { name: '发布成功' });
+  await successDialog.locator('.ant-typography-copy').click();
 }
 
 export async function expectShiftInCell(

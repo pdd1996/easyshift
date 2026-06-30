@@ -9,16 +9,31 @@ import { addDays, e2eClockTime, e2eWeekStart } from '../helpers/dates';
 import { createCurrentWeekPeriod, loginAsAdmin, openSchedulePage } from '../helpers/ui-auth';
 import {
   assignShiftInGrid,
+  confirmPublishDialog,
+  copyNotificationText,
+  dismissPublishSuccessDialog,
   expectShiftInCell,
+  openPublishDialog,
   publishCurrentPeriod,
+  readNotificationText,
 } from '../helpers/ui-schedule';
+import dayjs from 'dayjs';
 
 const RUN_SUFFIX = Date.now().toString().slice(-6);
 const RUN_WEEK_OFFSET = Number(Date.now().toString().slice(-5));
 const WEEK_E2E_01 = e2eWeekStart(RUN_WEEK_OFFSET);
-const WEEK_E2E_04 = e2eWeekStart(RUN_WEEK_OFFSET + 1);
-const WEEK_E2E_05 = e2eWeekStart(RUN_WEEK_OFFSET + 2);
+const WEEK_E2E_02 = e2eWeekStart(RUN_WEEK_OFFSET + 1);
+const WEEK_E2E_04 = e2eWeekStart(RUN_WEEK_OFFSET + 2);
+const WEEK_E2E_05 = e2eWeekStart(RUN_WEEK_OFFSET + 3);
+const WEEK_E2E_06 = e2eWeekStart(RUN_WEEK_OFFSET + 4);
 const DAY_SHIFT_CODE = 'D';
+const NIGHT_SHIFT_CODE = 'N';
+
+function formatWeekRange(weekStart: string): string {
+  const start = dayjs(weekStart);
+  const end = start.add(6, 'day');
+  return `${start.format('M月D日')}–${end.format('M月D日')}`;
+}
 
 test.describe('Schedule E2E', () => {
   test.describe.configure({ mode: 'serial' });
@@ -60,6 +75,22 @@ test.describe('Schedule E2E', () => {
     await page.reload();
     await page.getByRole('columnheader', { name: '员工' }).waitFor({ state: 'visible' });
     await expectShiftInCell(page, employee.name, 0, DAY_SHIFT_CODE);
+  });
+
+  test('E2E-02 故意少排大夜，发布确认弹窗展示覆盖不足 warning', async ({ page }) => {
+    const period = await admin.createPeriod(WEEK_E2E_02);
+    const nightShift = await admin.ensureNightShiftType(NIGHT_SHIFT_CODE);
+    await admin.upsertEntries(period.id, [
+      { employeeId: employee.id, workDate: WEEK_E2E_02, shiftTypeId: nightShift.id },
+    ]);
+
+    await prepareSchedulePage(page, WEEK_E2E_02);
+    await expect(page.getByText('草稿')).toBeVisible();
+
+    const publishDialog = await openPublishDialog(page);
+    await expect(publishDialog.getByText(/存在 \d+ 条排班警告/)).toBeVisible();
+    await expect(publishDialog.getByText(/N 仅 1 人，低于最低 2 人/)).toBeVisible();
+    await publishDialog.getByRole('button', { name: /取\s*消/ }).click();
   });
 
   test('E2E-04 发布成功，页面显示 v1 与发布时间', async ({ page }) => {
@@ -105,5 +136,37 @@ test.describe('Schedule E2E', () => {
     expect(afterRepublish.version).toBe(2);
     const tuesdayAfter = afterRepublish.days.find((day) => day.workDate === tuesday);
     expect(tuesdayAfter?.shift?.code).toBe(DAY_SHIFT_CODE);
+  });
+
+  test('E2E-06 发布成功后复制通知文案含周期信息', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+
+    const period = await admin.createPeriod(WEEK_E2E_06);
+    await admin.upsertEntries(period.id, [
+      { employeeId: employee.id, workDate: WEEK_E2E_06, shiftTypeId: dayShift.id },
+    ]);
+
+    await prepareSchedulePage(page, WEEK_E2E_06);
+    const publishDialog = await openPublishDialog(page);
+    await confirmPublishDialog(publishDialog);
+
+    const notificationText = await readNotificationText(page);
+    expect(notificationText).toContain('【心内科】');
+    expect(notificationText).toContain(formatWeekRange(WEEK_E2E_06));
+    expect(notificationText).toContain('班表已更新');
+    expect(notificationText).toContain('第 1 版');
+    expect(notificationText).toContain('发布时间');
+
+    await copyNotificationText(page);
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+    const normalizeText = (text: string) =>
+      text
+        .split('\n')
+        .map((line) => line.trim())
+        .join('\n')
+        .trim();
+    expect(normalizeText(clipboardText)).toBe(normalizeText(notificationText));
+
+    await dismissPublishSuccessDialog(page);
   });
 });

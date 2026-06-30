@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.6 |
+| 文档版本 | v1.8 |
 | 创建日期 | 2026-06-20 |
 | 关联文档 | [PRD.md](./PRD.md) · [TECH_STACK.md](./TECH_STACK.md) |
 | 适用范围 | v1.0 MVP（Web 管理端 + Hono API + 微信小程序） |
@@ -341,6 +341,19 @@ v1 **不做**多模态视觉 diff；仅行为断言。E2E 通过 Playwright `web
 | E2E-05 | AC-08 | 发布后改一格 → 查员工 API | 仍为 v1；再发布后 API 为 v2 |
 | E2E-06 | AC-09 | 发布成功 → 点复制文案 | 剪贴板/textarea 含周期信息 |
 
+**实现状态（v1 首发）**
+
+| 场景 ID | 状态 | 实现位置 | 说明 |
+|---------|------|----------|------|
+| E2E-01 | ✅ 已实现 | `e2e/tests/schedule.spec.ts` | 排班保存 |
+| E2E-04 | ✅ 已实现 | 同上 | 发布成功 |
+| E2E-05 | ✅ 已实现 | 同上 | 发布后改班 → 员工仍看旧版 → 再发布看新版 |
+| E2E-02 | ✅ 已实现 | `e2e/tests/schedule.spec.ts` | 覆盖不足 warning 弹窗 |
+| E2E-03 | ⏸ 不做 | — | 与 E2E-02 重叠（统计区高亮），二选一即可 |
+| E2E-06 | ✅ 已实现 | 同上 | 复制微信群通知文案 |
+
+**首发范围**：E2E-01 / 02 / 04 / 05 / 06 已实现；E2E-03 与 02 重叠，**不做**。E2E-02 / 06 对应逻辑亦在 API 单测（`publish.test.ts`、`validation.test.ts`、`notify-text.test.ts` 等）覆盖。
+
 同员工同天多班属于数据层异常，正常 10×7 UI 不应制造该状态；该规则由 `schedule.test.ts`（409）与 `rule-warnings.test.ts` 覆盖，不进入 E2E。
 
 **E2E interactions 示例**（YAML 风格，供生成脚本）：
@@ -443,7 +456,7 @@ on: push main / release
 | Phase 2 | Testcontainers + migration + seed | `publish.test.ts` 绿 |
 | Phase 3 | MSW handlers + ScheduleGrid 组件 3 条 | `[r1][i1][s3]` 绿 |
 | Phase 4 | binding + staff-schedule API | AC-10、AC-11、AC-13 绿 |
-| Phase 5 | Playwright E2E-01～05 | 发版前回归 |
+| Phase 5 | Playwright E2E-01 / 02 / 04 / 05 / 06 | 发版前回归 |
 | Phase 6 | 小程序手工清单 | 上线签字 |
 
 ---
@@ -452,6 +465,8 @@ on: push main / release
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.8 | 2026-06-30 | 补 Playwright E2E-02（覆盖 warning 弹窗）、E2E-06（复制通知文案） |
+| v1.7 | 2026-06-30 | 明确 E2E 首发范围：01/04/05 已实现；02/03/06 不阻塞上线，后补 02+06 |
 | v1.6 | 2026-06-30 | WEB-SCH-12 r6 已实现；补充日历单测路径与断言说明 |
 | v1.5 | 2026-06-30 | 同步首批 Playwright E2E 实现：E2E-01/04/05、webServer 启动方式与隔离周次约定 |
 | v1.4 | 2026-06-24 | 补充小程序 TDesign 与深色模式手工验收项 |
