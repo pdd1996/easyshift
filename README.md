@@ -55,4 +55,4 @@ easyshift/
 
 ## 许可证
 
-待定（商用前需确认）。
+本项目基于 Apache License 2.0 开源，详见 [LICENSE](./LICENSE)。

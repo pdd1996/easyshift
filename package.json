@@ -1,6 +1,7 @@
 {
   "name": "easyshift",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "dev": "pnpm --parallel --filter @easyshift/api --filter @easyshift/web dev",
