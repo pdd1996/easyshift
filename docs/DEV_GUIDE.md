@@ -250,11 +250,23 @@ WX_SECRET=真实小程序 Secret
 | `pnpm test` | Vitest 单元 / 组件 / API 测试 |
 | `pnpm test:api` | 仅 API 集成测试 |
 | `pnpm test:e2e` | Playwright E2E（headless） |
+| `pnpm --filter @easyshift/e2e exec playwright install chromium` | 首次运行 E2E 前安装 Chromium |
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | TypeScript 检查 |
 | `pnpm db:generate` | 根据 Drizzle schema 生成 migration |
 | `pnpm db:migrate` | 应用 migration |
 | `pnpm db:studio` | Drizzle Studio（若已配置） |
+
+### 4.1 E2E 运行说明
+
+`pnpm test:e2e` 会通过 Playwright `webServer` 自动启动 API 与 Web，并使用独立的微信 mock openid。首次运行前需要安装 Chromium：
+
+```bash
+pnpm --filter @easyshift/e2e exec playwright install chromium
+pnpm test:e2e
+```
+
+E2E 默认使用 `http://localhost:3000` 和 `http://localhost:5173`。若本地已运行 `pnpm dev`，请先停止占用端口的服务，避免 API 使用不同 `WX_MOCK_OPENID` 导致绑定状态冲突。
 
 ---
 
@@ -307,6 +319,7 @@ WX_SECRET=真实小程序 Secret
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.3 | 2026-06-30 | 补充 Playwright E2E 浏览器安装、自动启动服务与端口占用说明 |
 | v1.2 | 2026-06-27 | 澄清小程序解绑 / Web 停用 / 本地 SQL 重置三种路径；标注 Web 强制解绑未实现 |
 | v1.1 | 2026-06-27 | 补充小程序绑定状态重置与状态字段语义 |
 | v1.0 | 2026-06-23 | 初版 |

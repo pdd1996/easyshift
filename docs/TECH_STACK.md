@@ -344,7 +344,7 @@ v1 不要求 Kubernetes 或微服务拆分。
 
 - 功能开发 **propose** 阶段：维护模块 `test-spec.md`，断言拆为 `[rN]` 渲染、`[iN]` 交互、`[sN]` 状态。
 - **apply** 阶段：`it('[i1] …')` 描述以 ID 开头，失败可追溯 PRD。
-- MSW handler 放在 `apps/web/src/test/handlers.ts`，用于组件测试；E2E 默认真 Web + 真 API + 真 MySQL。
+- MSW handler 放在 `apps/web/src/test/handlers.ts`，用于组件测试；E2E 默认真 Web + 真 API + 真 MySQL，并由 Playwright `webServer` 启动本地 Web/API。
 
 ### 11.3 Mock 规则
 
@@ -367,6 +367,7 @@ Ant Design 组件测试默认使用 `jsdom`，测试 setup 中统一 polyfill `R
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.6 | 2026-06-30 | 补充 Playwright E2E webServer 启动约定 |
 | v1.5 | 2026-06-24 | 小程序 UI 定稿为 TDesign Miniprogram；明确深色模式适配方案与 v1 范围 |
 | v1.4 | 2026-06-20 | 修正测试约定中的 E2E、MSW 与组件测试环境说明 |
 | v1.3 | 2026-06-20 | 新增测试约定章节，关联 TEST_PLAN.md |

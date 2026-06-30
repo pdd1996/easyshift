@@ -328,13 +328,13 @@ easyshift/
 
 ## 6. Playwright E2E 场景
 
-**文件**：`e2e/ui-test-spec.md` + `e2e/*.spec.ts`
+**文件**：`e2e/tests/*.spec.ts` + `e2e/helpers/*.ts`
 
-v1 **不做**多模态视觉 diff；仅行为断言。CI 内 headless Chromium + docker-compose 全栈。
+v1 **不做**多模态视觉 diff；仅行为断言。E2E 通过 Playwright `webServer` 自动启动 Web + API，默认使用真 MySQL 与微信 mock。测试周次使用远期隔离周，避免与日常排班数据冲突；长期仍应补充 teardown 或测试库重置，避免 E2E 数据持续堆积。
 
 | 场景 ID | 关联 AC | 步骤 | 期望 |
 |---------|---------|------|------|
-| E2E-01 | AC-03 | 登录 → 创建下周 → 为 10 人排满 7 天 → 保存 | 刷新后格子内容保留 |
+| E2E-01 | AC-03 | 登录 → 创建隔离周周期 → 为员工排 1 格 → 保存 | 刷新后格子内容保留 |
 | E2E-02 | AC-05、AC-06 | 故意少排大夜 → 点发布 | 确认弹窗含 `COVERAGE_BELOW_MIN` 等排班 warning |
 | E2E-03 | AC-05、AC-06 | 排班表存在覆盖不足 | 页面统计区高亮未达标班次 |
 | E2E-04 | AC-07 | 发布成功 | 页面显示 version=1 与发布时间 |
@@ -407,7 +407,7 @@ on: pull_request
 on: push main / release
   - pnpm test:unit
   - pnpm test:integration
-  - pnpm test:e2e           # docker-compose up + Playwright
+  - pnpm test:e2e           # Playwright webServer 启动 Web + API
 ```
 
 | 失败后果 | 策略 |
@@ -452,6 +452,7 @@ on: push main / release
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.5 | 2026-06-30 | 同步首批 Playwright E2E 实现：E2E-01/04/05、webServer 启动方式与隔离周次约定 |
 | v1.4 | 2026-06-24 | 补充小程序 TDesign 与深色模式手工验收项 |
 | v1.3 | 2026-06-24 | 班次类型 `kind`、规则校验与 code 解耦；迁移 0002 说明 |
 | v1.2 | 2026-06-24 | 同步排班警告实现：warning 代码、测试文件路径、WEB-VAL-05 未实现标注 |
