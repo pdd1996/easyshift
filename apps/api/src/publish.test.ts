@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { createApp } from './app.js';
+import { addDays } from './services/schedule/date-utils.js';
 import { db } from './db/index.js';
 import { schedulePublishSnapshots } from './db/schema/index.js';
 import { adminHeaders, loginAsAdmin } from './test/helpers.js';
@@ -21,8 +22,9 @@ describe.skipIf(skipDbTests && !dbAvailable)('publish API (AC-07)', () => {
   const createdPeriodIds: number[] = [];
   const createdEmployeeIds: number[] = [];
   const createdShiftTypeIds: number[] = [];
-  const runSuffix = Date.now().toString().slice(-6);
-  const weekStart = '2026-07-06';
+  const runId = Date.now();
+  const runSuffix = runId.toString().slice(-6);
+  const weekStart = addDays('2027-01-04', (runId % 500) * 14);
 
   let employeeId = 0;
   let shiftTypeId = 0;

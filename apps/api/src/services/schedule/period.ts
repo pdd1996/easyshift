@@ -58,6 +58,27 @@ export async function getPeriodRow(departmentId: number, periodId: number) {
   return row;
 }
 
+type DbSelect = Pick<typeof db, 'select'>;
+
+export async function lockPeriodRow(
+  tx: DbSelect,
+  departmentId: number,
+  periodId: number,
+): Promise<typeof schedulePeriods.$inferSelect> {
+  const [row] = await tx
+    .select()
+    .from(schedulePeriods)
+    .where(and(eq(schedulePeriods.id, periodId), eq(schedulePeriods.departmentId, departmentId)))
+    .for('update')
+    .limit(1);
+
+  if (!row) {
+    throw new AppError(404, 'NOT_FOUND', '排班周期不存在');
+  }
+
+  return row;
+}
+
 export async function listPeriods(
   departmentId: number,
   query: ListPeriodsQuery = {},
