@@ -11,10 +11,9 @@ import {
   Typography,
   message,
 } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { EmployeeDto } from '@easyshift/shared-types';
-import { useState, type ChangeEvent } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import {
   getApiErrorMessage,
   useCreateEmployee,
@@ -26,13 +25,18 @@ import {
 } from './api';
 
 type FormMode = 'create' | 'edit';
-type TextFilterKey = 'employeeNo' | 'name' | 'phone' | 'title';
 
 export function EmployeesPage() {
   const { modal } = App.useApp();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [statusFilterInput, setStatusFilterInput] = useState<'active' | 'inactive' | undefined>(
+    undefined,
+  );
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | undefined>(undefined);
+  const [bindingStatusFilterInput, setBindingStatusFilterInput] = useState<
+    'bound' | 'unbound' | undefined
+  >(undefined);
   const [bindingStatusFilter, setBindingStatusFilter] = useState<'bound' | 'unbound' | undefined>(
     undefined,
   );
@@ -135,31 +139,37 @@ export function EmployeesPage() {
     return trimmed || undefined;
   };
 
-  const applyTextFilters = (overrides: Partial<Record<TextFilterKey, string>> = {}) => {
-    setEmployeeNo(normalizeTextFilter(overrides.employeeNo ?? employeeNoInput));
-    setName(normalizeTextFilter(overrides.name ?? nameInput));
-    setPhone(normalizeTextFilter(overrides.phone ?? phoneInput));
-    setTitle(normalizeTextFilter(overrides.title ?? titleInput));
+  const handleSearch = () => {
+    setEmployeeNo(normalizeTextFilter(employeeNoInput));
+    setName(normalizeTextFilter(nameInput));
+    setPhone(normalizeTextFilter(phoneInput));
+    setTitle(normalizeTextFilter(titleInput));
+    setStatusFilter(statusFilterInput);
+    setBindingStatusFilter(bindingStatusFilterInput);
     resetPage();
   };
 
-  const textSearchProps = (
-    input: string,
-    setInput: (value: string) => void,
-    key: TextFilterKey,
-  ) => ({
-    allowClear: true as const,
-    enterButton: <SearchOutlined />,
-    value: input,
-    onChange: (e: ChangeEvent<HTMLInputElement>) => {
-      const nextValue = e.target.value;
-      setInput(nextValue);
-      if (!nextValue) {
-        applyTextFilters({ [key]: '' });
-      }
-    },
-    onSearch: (value: string) => applyTextFilters({ [key]: value }),
-  });
+  const handleReset = () => {
+    setEmployeeNoInput('');
+    setNameInput('');
+    setPhoneInput('');
+    setTitleInput('');
+    setStatusFilterInput(undefined);
+    setBindingStatusFilterInput(undefined);
+    setEmployeeNo(undefined);
+    setName(undefined);
+    setPhone(undefined);
+    setTitle(undefined);
+    setStatusFilter(undefined);
+    setBindingStatusFilter(undefined);
+    resetPage();
+  };
+
+  const handleFilterKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+      handleSearch();
+    }
+  };
 
   const columns: ColumnsType<EmployeeDto> = [
     { title: '工号', dataIndex: 'employeeNo', width: 100 },
@@ -229,36 +239,45 @@ export function EmployeesPage() {
         </Button>
       </div>
 
-      <Space wrap>
-        <Input.Search
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          allowClear
           placeholder="工号"
           style={{ width: 160 }}
-          {...textSearchProps(employeeNoInput, setEmployeeNoInput, 'employeeNo')}
+          value={employeeNoInput}
+          onChange={(e) => setEmployeeNoInput(e.target.value)}
+          onKeyDown={handleFilterKeyDown}
         />
-        <Input.Search
+        <Input
+          allowClear
           placeholder="姓名"
           style={{ width: 160 }}
-          {...textSearchProps(nameInput, setNameInput, 'name')}
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value)}
+          onKeyDown={handleFilterKeyDown}
         />
-        <Input.Search
+        <Input
+          allowClear
           placeholder="手机号"
           style={{ width: 220 }}
-          {...textSearchProps(phoneInput, setPhoneInput, 'phone')}
+          value={phoneInput}
+          onChange={(e) => setPhoneInput(e.target.value)}
+          onKeyDown={handleFilterKeyDown}
         />
-        <Input.Search
+        <Input
+          allowClear
           placeholder="岗位"
           style={{ width: 160 }}
-          {...textSearchProps(titleInput, setTitleInput, 'title')}
+          value={titleInput}
+          onChange={(e) => setTitleInput(e.target.value)}
+          onKeyDown={handleFilterKeyDown}
         />
         <Select
           allowClear
           placeholder="在职状态"
           style={{ width: 120 }}
-          value={statusFilter}
-          onChange={(v) => {
-            setStatusFilter(v);
-            resetPage();
-          }}
+          value={statusFilterInput}
+          onChange={setStatusFilterInput}
           options={[
             { label: '在职', value: 'active' },
             { label: '停用', value: 'inactive' },
@@ -268,17 +287,20 @@ export function EmployeesPage() {
           allowClear
           placeholder="绑定状态"
           style={{ width: 120 }}
-          value={bindingStatusFilter}
-          onChange={(v) => {
-            setBindingStatusFilter(v);
-            resetPage();
-          }}
+          value={bindingStatusFilterInput}
+          onChange={setBindingStatusFilterInput}
           options={[
             { label: '已绑定', value: 'bound' },
             { label: '未绑定', value: 'unbound' },
           ]}
         />
-      </Space>
+        <Space className="ml-auto">
+          <Button type="primary" onClick={handleSearch}>
+            搜索
+          </Button>
+          <Button onClick={handleReset}>重置</Button>
+        </Space>
+      </div>
 
       <Table
         rowKey="id"
