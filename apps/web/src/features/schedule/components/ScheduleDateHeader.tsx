@@ -19,7 +19,7 @@ function tagColor(hint: CalendarDayHint): string {
 
 function headerToneClass(hint: CalendarDayHint | null): string {
   if (!hint) {
-    return 'text-gray-600';
+    return 'bg-gray-50 text-gray-600';
   }
 
   switch (hint.type) {
@@ -41,7 +41,7 @@ export function ScheduleDateHeader({ workDate }: ScheduleDateHeaderProps) {
 
   return (
     <th
-      className={`min-w-24 border-r border-gray-100 px-2 py-2 text-center font-medium last:border-r-0 ${headerToneClass(hint)}`}
+      className={`sticky top-0 z-20 min-w-24 border-r border-gray-100 px-2 py-2 text-center font-medium last:border-r-0 ${headerToneClass(hint)}`}
     >
       <div>{formatWeekdayLabel(workDate)}</div>
       <div className={`text-xs font-normal ${hint ? 'opacity-80' : 'text-gray-400'}`}>

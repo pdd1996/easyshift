@@ -113,11 +113,11 @@ export function ScheduleGrid({
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="max-h-[calc(100vh-18rem)] overflow-y-auto">
       <table className="min-w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="sticky left-0 z-10 w-36 min-w-36 border-r border-gray-200 bg-gray-50 px-3 py-2 text-left font-medium text-gray-600">
+            <th className="sticky left-0 top-0 z-30 w-36 min-w-36 border-r border-gray-200 bg-gray-50 px-3 py-2 text-left font-medium text-gray-600">
               员工
             </th>
             {weekDates.map((workDate) => (

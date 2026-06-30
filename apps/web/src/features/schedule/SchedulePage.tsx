@@ -465,22 +465,24 @@ export function SchedulePage() {
             />
           </div>
         ) : grid ? (
-          <>
-            <ScheduleGrid
-              weekStart={weekStart}
-              employees={grid.employees}
-              shiftTypes={grid.shiftTypes}
-              entries={grid.entries}
-              onAssignShift={handleAssignShift}
-              onClearShift={handleClearShift}
-              isSaving={isSaving}
-            />
-            <DailyCoverageRow
-              weekStart={weekStart}
-              dailyCoverage={grid.dailyCoverage}
-              activeShiftTypes={activeShiftTypes}
-            />
-          </>
+          <div className="overflow-x-auto">
+            <div className="min-w-[51rem]">
+              <ScheduleGrid
+                weekStart={weekStart}
+                employees={grid.employees}
+                shiftTypes={grid.shiftTypes}
+                entries={grid.entries}
+                onAssignShift={handleAssignShift}
+                onClearShift={handleClearShift}
+                isSaving={isSaving}
+              />
+              <DailyCoverageRow
+                weekStart={weekStart}
+                dailyCoverage={grid.dailyCoverage}
+                activeShiftTypes={activeShiftTypes}
+              />
+            </div>
+          </div>
         ) : null}
       </div>
 

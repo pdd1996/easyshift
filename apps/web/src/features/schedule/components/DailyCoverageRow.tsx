@@ -36,7 +36,7 @@ export function DailyCoverageRow({
   }
 
   return (
-    <div className="overflow-x-auto border-t border-gray-200 bg-gray-50">
+    <div className="border-t border-gray-200 bg-gray-50">
       <table className="min-w-full border-collapse text-sm">
         <tbody>
           <tr>
