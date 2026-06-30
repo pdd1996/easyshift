@@ -1,4 +1,13 @@
+import { useState } from 'react';
 import { Layout, Menu, Typography, Button } from 'antd';
+import {
+  AppstoreOutlined,
+  CalendarOutlined,
+  HistoryOutlined,
+  SettingOutlined,
+  TagsOutlined,
+  TeamOutlined,
+} from '@ant-design/icons';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { logoutAdmin, useAdminSession } from '@/features/auth/api';
@@ -10,6 +19,7 @@ export function AppLayout() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { data: session } = useAdminSession();
+  const [collapsed, setCollapsed] = useState(false);
 
   const selectedKey =
     location.pathname === '/employees'
@@ -33,16 +43,45 @@ export function AppLayout() {
   });
 
   return (
-    <Layout className="min-h-screen">
-      <Sider theme="light" width={220} className="border-r border-gray-200">
-        <div className="px-4 py-5">
-          <Typography.Title level={5} className="!mb-0">
-            EasyShift
-          </Typography.Title>
-          <Typography.Text type="secondary">{session?.department.name}</Typography.Text>
+    <Layout className="h-screen overflow-hidden">
+      <Sider
+        theme="light"
+        width={220}
+        collapsedWidth={64}
+        collapsible
+        collapsed={collapsed}
+        onCollapse={setCollapsed}
+        trigger={null}
+        className="!bg-white border-r border-gray-200"
+        style={{ height: '100vh', overflow: 'auto' }}
+      >
+        <div
+          className={`flex items-center border-b border-gray-100 px-3 py-4 ${
+            collapsed ? 'justify-center' : 'justify-between gap-2'
+          }`}
+        >
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <Typography.Title level={5} className="!mb-0">
+                EasyShift
+              </Typography.Title>
+              <Typography.Text type="secondary" className="text-xs">
+                {session?.department.name}
+              </Typography.Text>
+            </div>
+          )}
+          <Button
+            type="text"
+            size="small"
+            aria-label={collapsed ? '展开导航' : '收起导航'}
+            onClick={() => setCollapsed((value) => !value)}
+          >
+            {collapsed ? '»' : '«'}
+          </Button>
         </div>
         <Menu
           mode="inline"
+          inlineCollapsed={collapsed}
           selectedKeys={[selectedKey]}
           onClick={({ key }) => {
             if (key === 'dashboard') navigate('/');
@@ -53,23 +92,23 @@ export function AppLayout() {
             if (key === 'department') navigate('/department');
           }}
           items={[
-            { key: 'dashboard', label: '工作台' },
-            { key: 'schedule', label: '排班表' },
-            { key: 'change-logs', label: '操作记录' },
-            { key: 'employees', label: '员工管理' },
-            { key: 'shifts', label: '班次类型' },
-            { key: 'department', label: '科室设置' },
+            { key: 'dashboard', icon: <AppstoreOutlined />, label: '工作台' },
+            { key: 'schedule', icon: <CalendarOutlined />, label: '排班表' },
+            { key: 'change-logs', icon: <HistoryOutlined />, label: '操作记录' },
+            { key: 'employees', icon: <TeamOutlined />, label: '员工管理' },
+            { key: 'shifts', icon: <TagsOutlined />, label: '班次类型' },
+            { key: 'department', icon: <SettingOutlined />, label: '科室设置' },
           ]}
         />
       </Sider>
-      <Layout>
-        <Header className="flex items-center justify-between bg-white px-6">
-          <Typography.Text>{session?.user.phone}</Typography.Text>
-          <Button onClick={() => logoutMutation.mutate()} loading={logoutMutation.isPending}>
+      <Layout className="flex min-h-0 flex-1 flex-col">
+        <Header className="!flex !h-14 !items-center !justify-between !bg-white !px-6 !py-0 !leading-normal border-b border-gray-200">
+          <Typography.Text type="secondary">管理员 · {session?.user.phone}</Typography.Text>
+          <Button type="link" onClick={() => logoutMutation.mutate()} loading={logoutMutation.isPending}>
             退出登录
           </Button>
         </Header>
-        <Content className="p-6">
+        <Content className="min-h-0 flex-1 overflow-auto bg-[#F8FAFC] p-6">
           <Outlet />
         </Content>
       </Layout>

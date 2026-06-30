@@ -13,6 +13,7 @@
     "lint": "echo \"no lint configured\""
   },
   "dependencies": {
+    "@ant-design/icons": "^6.3.2",
     "@easyshift/shared-types": "workspace:*",
     "@tanstack/react-query": "^5.81.2",
     "antd": "^5.26.2",
