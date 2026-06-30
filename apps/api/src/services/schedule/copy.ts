@@ -12,7 +12,7 @@ import {
 } from '../../db/schema/index.js';
 import { AppError } from '../../lib/errors.js';
 import { addDays, isDateInWeek } from './date-utils.js';
-import { getPeriodRow } from './period.js';
+import { getPeriodRow, lockPeriodRow } from './period.js';
 
 export interface CopyWarning {
   code:
@@ -175,6 +175,11 @@ export async function copyFromPreviousWeek(
   }
 
   const savedEntries = await db.transaction(async (tx) => {
+    const lockedTargetPeriod = await lockPeriodRow(tx, departmentId, targetPeriodId);
+    const needsPeriodUpdate =
+      lockedTargetPeriod.editStatus === 'published' ||
+      lockedTargetPeriod.latestPublishedVersion !== null;
+
     await tx.delete(scheduleEntries).where(eq(scheduleEntries.periodId, targetPeriodId));
 
     if (entriesToInsert.length > 0) {
@@ -189,7 +194,7 @@ export async function copyFromPreviousWeek(
       );
     }
 
-    if (targetPeriod.editStatus === 'published' || targetPeriod.latestPublishedVersion !== null) {
+    if (needsPeriodUpdate) {
       await tx
         .update(schedulePeriods)
         .set({ hasUnpublishedChanges: true })

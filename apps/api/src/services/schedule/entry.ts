@@ -10,7 +10,7 @@ import {
 } from '../../db/schema/index.js';
 import { AppError } from '../../lib/errors.js';
 import { isDateInWeek } from './date-utils.js';
-import { getPeriodRow } from './period.js';
+import { getPeriodRow, lockPeriodRow } from './period.js';
 
 export interface EntryInput {
   employeeId: number;
@@ -126,6 +126,10 @@ export async function upsertEntries(
   }
 
   const savedEntries = await db.transaction(async (tx) => {
+    const lockedPeriod = await lockPeriodRow(tx, departmentId, periodId);
+    const needsPeriodUpdate =
+      lockedPeriod.editStatus === 'published' || lockedPeriod.latestPublishedVersion !== null;
+
     const results: ScheduleEntryDto[] = [];
 
     for (const entry of entries) {
@@ -177,7 +181,7 @@ export async function upsertEntries(
       }
     }
 
-    if (period.editStatus === 'published' || period.latestPublishedVersion !== null) {
+    if (needsPeriodUpdate) {
       await tx
         .update(schedulePeriods)
         .set({ hasUnpublishedChanges: true })
@@ -230,9 +234,13 @@ export async function deleteEntry(
   }
 
   await db.transaction(async (tx) => {
+    const lockedPeriod = await lockPeriodRow(tx, departmentId, periodId);
+    const needsPeriodUpdate =
+      lockedPeriod.editStatus === 'published' || lockedPeriod.latestPublishedVersion !== null;
+
     await tx.delete(scheduleEntries).where(eq(scheduleEntries.id, existing.id));
 
-    if (period.editStatus === 'published' || period.latestPublishedVersion !== null) {
+    if (needsPeriodUpdate) {
       await tx
         .update(schedulePeriods)
         .set({ hasUnpublishedChanges: true })

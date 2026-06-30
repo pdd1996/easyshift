@@ -21,7 +21,7 @@ describe.skipIf(skipDbTests && !dbAvailable)('schedule copy API (AC-04)', () => 
   const createdShiftTypeIds: number[] = [];
   const runId = Date.now();
   const runSuffix = runId.toString().slice(-6);
-  const sourceWeekStart = addDays('2027-01-04', (runId % 1000) * 14);
+  const sourceWeekStart = addDays('2027-01-04', ((runId % 1000) + 2_000) * 14);
   const targetWeekStart = addDays(sourceWeekStart, 7);
   const sourceWorkDates = [sourceWeekStart, addDays(sourceWeekStart, 1), addDays(sourceWeekStart, 2)];
   const targetWorkDates = [targetWeekStart, addDays(targetWeekStart, 1), addDays(targetWeekStart, 2)];
@@ -189,10 +189,11 @@ describe.skipIf(skipDbTests && !dbAvailable)('schedule copy API (AC-04)', () => 
   });
 
   it('returns 404 when source week period does not exist', async () => {
+    const orphanWeekStart = addDays('2027-01-04', ((runId % 500) + 4_000) * 14);
     const orphanRes = await app.request('/api/v1/schedule/periods', {
       method: 'POST',
       headers: adminHeaders(cookie),
-      body: JSON.stringify({ weekStart: '2026-07-06' }),
+      body: JSON.stringify({ weekStart: orphanWeekStart }),
     });
     const orphanBody = (await orphanRes.json()) as { data: { id: number } };
     createdPeriodIds.push(orphanBody.data.id);
