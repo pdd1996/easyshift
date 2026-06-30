@@ -71,7 +71,7 @@ describe('ChangeLogsPage', () => {
     expect(screen.getByText('明细')).toBeInTheDocument();
   });
 
-  it('[log2] 默认查询最近 7 天，并按时间范围切换参数', async () => {
+  it('[log2] 默认查询最近 7 天，清空日期后搜索表示不限时间', async () => {
     renderPage();
 
     await waitFor(() => {
@@ -82,42 +82,42 @@ describe('ChangeLogsPage', () => {
     expect(listRequests.at(-1)?.searchParams.get('page')).toBe('1');
     expect(listRequests.at(-1)?.searchParams.get('pageSize')).toBe('20');
 
-    fireEvent.click(screen.getByText('最近 30 天'));
-    await waitFor(() => {
-      expect(listRequests.at(-1)?.searchParams.get('from')).toBe('2026-05-26');
-    });
-    expect(listRequests.at(-1)?.searchParams.get('to')).toBe('2026-06-24');
+    const picker = screen.getByPlaceholderText('开始日期').closest('.ant-picker');
+    expect(picker).not.toBeNull();
+    fireEvent.mouseEnter(picker!);
+    const clearButton = picker!.querySelector('.ant-picker-clear');
+    expect(clearButton).not.toBeNull();
+    fireEvent.click(clearButton!);
 
-    fireEvent.click(screen.getByText('不限'));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('开始日期')).toHaveValue('');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /搜\s*索/ }));
+
     await waitFor(() => {
       expect(listRequests.at(-1)?.searchParams.has('from')).toBe(false);
     });
     expect(listRequests.at(-1)?.searchParams.has('to')).toBe(false);
   });
 
-  it('[log2] 组合筛选会传递排班周、操作类型和操作人参数', async () => {
+  it('[log2] 选择操作类型后搜索会传递 action 参数', async () => {
     renderPage();
 
     await screen.findByText('保存排班');
+    const requestCountBeforeFilter = listRequests.length;
 
-    const [periodSelect, actionSelect, operatorSelect] = screen.getAllByRole('combobox');
-    fireEvent.mouseDown(periodSelect!);
-    const periodOptions = await screen.findAllByText('6月22日 – 6月28日');
-    fireEvent.click(periodOptions.at(-1)!);
-
+    const [actionSelect] = screen.getAllByRole('combobox');
     fireEvent.mouseDown(actionSelect!);
     const actionOptions = await screen.findAllByText('清除排班');
     fireEvent.click(actionOptions.at(-1)!);
 
-    fireEvent.mouseDown(operatorSelect!);
-    const operatorOptions = await screen.findAllByText('13800138000');
-    fireEvent.click(operatorOptions.at(-1)!);
+    expect(listRequests.length).toBe(requestCountBeforeFilter);
+
+    fireEvent.click(screen.getByRole('button', { name: /搜\s*索/ }));
 
     await waitFor(() => {
-      const latestParams = listRequests.at(-1)?.searchParams;
-      expect(latestParams?.get('periodId')).toBe('1');
-      expect(latestParams?.get('action')).toBe('entry_delete');
-      expect(latestParams?.get('operatorId')).toBe('1');
+      expect(listRequests.at(-1)?.searchParams.get('action')).toBe('entry_delete');
     });
   });
 });

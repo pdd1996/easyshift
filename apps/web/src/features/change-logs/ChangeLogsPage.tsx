@@ -1,8 +1,8 @@
 import type { ScheduleChangeLogDto } from '@easyshift/shared-types';
-import { Button, Drawer, Segmented, Select, Space, Table, Typography } from 'antd';
+import { Button, DatePicker, Drawer, Select, Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import dayjs from 'dayjs';
-import { useMemo, useState } from 'react';
+import dayjs, { type Dayjs } from 'dayjs';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEmployees } from '@/features/employees/api';
 import { formatWeekRange } from '@/features/schedule/utils';
@@ -14,29 +14,35 @@ import {
   getChangeLogActionLabel,
 } from './change-log-utils';
 
-type TimeRangePreset = '7d' | '30d' | 'all';
+const { RangePicker } = DatePicker;
 
-function computeDateRange(preset: TimeRangePreset): { from?: string; to?: string } {
-  if (preset === 'all') {
+function getDefaultDateRange(): [Dayjs, Dayjs] {
+  return [dayjs().subtract(6, 'day'), dayjs()];
+}
+
+function toDateRangeParams(range: [Dayjs, Dayjs] | null): { from?: string; to?: string } {
+  if (!range?.[0] || !range?.[1]) {
     return {};
   }
-  const to = dayjs().format('YYYY-MM-DD');
-  const days = preset === '7d' ? 6 : 29;
-  const from = dayjs().subtract(days, 'day').format('YYYY-MM-DD');
-  return { from, to };
+  return {
+    from: range[0].format('YYYY-MM-DD'),
+    to: range[1].format('YYYY-MM-DD'),
+  };
 }
 
 export function ChangeLogsPage() {
   const navigate = useNavigate();
-  const [timeRange, setTimeRange] = useState<TimeRangePreset>('7d');
-  const [periodId, setPeriodId] = useState<number | undefined>(undefined);
+  const [dateRangeInput, setDateRangeInput] = useState<[Dayjs, Dayjs] | null>(() =>
+    getDefaultDateRange(),
+  );
+  const [dateRangeApplied, setDateRangeApplied] = useState<{ from?: string; to?: string }>(() =>
+    toDateRangeParams(getDefaultDateRange()),
+  );
+  const [actionInput, setActionInput] = useState<string | undefined>(undefined);
   const [action, setAction] = useState<string | undefined>(undefined);
-  const [operatorId, setOperatorId] = useState<number | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [selectedLog, setSelectedLog] = useState<ScheduleChangeLogDto | null>(null);
-
-  const dateRange = useMemo(() => computeDateRange(timeRange), [timeRange]);
 
   const { data: filterOptions } = useChangeLogFilterOptions();
   const { data: employeesData } = useEmployees({ page: 1, pageSize: 100 });
@@ -45,13 +51,28 @@ export function ChangeLogsPage() {
   const { data, isLoading } = useChangeLogs({
     page,
     pageSize,
-    ...dateRange,
-    periodId,
+    ...dateRangeApplied,
     action,
-    operatorId,
   });
 
   const employees = employeesData?.data ?? [];
+
+  const resetPage = () => setPage(1);
+
+  const handleSearch = () => {
+    setDateRangeApplied(toDateRangeParams(dateRangeInput));
+    setAction(actionInput);
+    resetPage();
+  };
+
+  const handleReset = () => {
+    const defaultRange = getDefaultDateRange();
+    setDateRangeInput(defaultRange);
+    setDateRangeApplied(toDateRangeParams(defaultRange));
+    setActionInput(undefined);
+    setAction(undefined);
+    resetPage();
+  };
 
   const columns: ColumnsType<ScheduleChangeLogDto> = [
     {
@@ -85,70 +106,37 @@ export function ChangeLogsPage() {
     },
   ];
 
-  const resetPage = () => setPage(1);
-
   return (
     <div>
       <Typography.Title level={4} className="!mb-4">
         操作记录
       </Typography.Title>
 
-      <Space wrap className="mb-4">
-        <Segmented
-          value={timeRange}
-          options={[
-            { label: '最近 7 天', value: '7d' },
-            { label: '最近 30 天', value: '30d' },
-            { label: '不限', value: 'all' },
-          ]}
-          onChange={(value) => {
-            setTimeRange(value as TimeRangePreset);
-            resetPage();
-          }}
-        />
-        <Select
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <RangePicker
           allowClear
-          placeholder="排班周"
-          style={{ minWidth: 180 }}
-          value={periodId}
-          options={filterOptions?.periods.map((period) => ({
-            value: period.id,
-            label: formatWeekRange(period.weekStart),
-          }))}
-          onChange={(value) => {
-            setPeriodId(value);
-            resetPage();
-          }}
+          value={dateRangeInput}
+          onChange={(dates) => setDateRangeInput(dates as [Dayjs, Dayjs] | null)}
+          placeholder={['开始日期', '结束日期']}
         />
         <Select
           allowClear
           placeholder="操作类型"
           style={{ minWidth: 140 }}
-          value={action}
+          value={actionInput}
           options={filterOptions?.actions.map((item) => ({
             value: item,
             label: getChangeLogActionLabel(item),
           }))}
-          onChange={(value) => {
-            setAction(value);
-            resetPage();
-          }}
+          onChange={setActionInput}
         />
-        <Select
-          allowClear
-          placeholder="操作人"
-          style={{ minWidth: 140 }}
-          value={operatorId}
-          options={filterOptions?.operators.map((operator) => ({
-            value: operator.id,
-            label: formatOperatorLabel(operator.phone),
-          }))}
-          onChange={(value) => {
-            setOperatorId(value);
-            resetPage();
-          }}
-        />
-      </Space>
+        <Space className="ml-auto">
+          <Button type="primary" onClick={handleSearch}>
+            搜索
+          </Button>
+          <Button onClick={handleReset}>重置</Button>
+        </Space>
+      </div>
 
       <Table
         rowKey="id"
