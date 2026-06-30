@@ -18,7 +18,9 @@ export function AppLayout() {
         ? 'schedule'
         : location.pathname.startsWith('/shift-types')
           ? 'shifts'
-          : 'dashboard';
+          : location.pathname.startsWith('/department')
+            ? 'department'
+            : 'dashboard';
 
   const logoutMutation = useMutation({
     mutationFn: logoutAdmin,
@@ -45,12 +47,14 @@ export function AppLayout() {
             if (key === 'employees') navigate('/employees');
             if (key === 'shifts') navigate('/shift-types');
             if (key === 'schedule') navigate('/schedule');
+            if (key === 'department') navigate('/department');
           }}
           items={[
             { key: 'dashboard', label: '工作台' },
             { key: 'schedule', label: '排班表' },
             { key: 'employees', label: '员工管理' },
             { key: 'shifts', label: '班次类型' },
+            { key: 'department', label: '科室设置' },
           ]}
         />
       </Sider>
