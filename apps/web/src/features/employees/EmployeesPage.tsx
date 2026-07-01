@@ -13,6 +13,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { EmployeeDto } from '@easyshift/shared-types';
+import dayjs from 'dayjs';
 import { useState, type KeyboardEvent } from 'react';
 import {
   getApiErrorMessage,
@@ -382,10 +383,14 @@ export function EmployeesPage() {
             <Typography.Paragraph type="secondary" className="!mb-2">
               请将以下绑定码告知员工，在小程序中输入绑定码及手机号后四位完成绑定。绑定码仅显示一次。
             </Typography.Paragraph>
-            <Typography.Title level={2} className="!mb-0 tracking-widest text-center">
-              {bindingCode.code}
-            </Typography.Title>
-            <Typography.Text type="secondary">有效期至 {bindingCode.expiresAt}</Typography.Text>
+            <div className="flex flex-col items-center pt-6">
+              <Typography.Title level={2} className="!mb-0 tracking-widest">
+                {bindingCode.code}
+              </Typography.Title>
+              <Typography.Text type="secondary" className="mt-4">
+                有效期至 {dayjs(bindingCode.expiresAt).format('YYYY-MM-DD HH:mm')}
+              </Typography.Text>
+            </div>
           </div>
         )}
       </Modal>
