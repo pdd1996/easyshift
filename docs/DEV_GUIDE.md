@@ -285,9 +285,11 @@ E2E 默认使用 `http://localhost:3000` 和 `http://localhost:5173`。若本地
 | 共享类型 | `packages/shared-types/src/` |
 | MSW handlers | `apps/web/src/test/handlers.ts` |
 
-### 5.3 规格驱动测试
+### 5.3 规格驱动开发与测试
 
-功能开发时在模块目录维护 `test-spec.md`，测试用例 ID 与 PRD 可追溯。详见 [TEST_PLAN.md](./TEST_PLAN.md)。
+- **长期文档**：`docs/PRD.md`、`docs/API.md` 等见 [doc-sync 规则](../.cursor/rules/doc-sync.mdc)。
+- **变更执行**：新需求在 [.doc/specs/active/](../.doc/specs/active/) 维护 `spec.md` → `plan.md` → `tasks.md`，见 [.doc/README.md](../.doc/README.md)。
+- **模块验收**：各 feature 目录维护 `test-spec.md`（`[r/i/s/u]` 断言 ID，与 PRD 可追溯）；索引见 [TEST_PLAN.md](./TEST_PLAN.md) §5。
 
 ### 5.4 SQL 审查
 

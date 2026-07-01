@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.8 |
+| 文档版本 | v1.9 |
 | 创建日期 | 2026-06-20 |
 | 关联文档 | [PRD.md](./PRD.md) · [TECH_STACK.md](./TECH_STACK.md) |
 | 适用范围 | v1.0 MVP（Web 管理端 + Hono API + 微信小程序） |
@@ -25,11 +25,12 @@ Playwright E2E（少）→ Web 关键用户路径（5～8 条）
 手工验收（小程序） → 真机微信，AC-10～13 清单
 ```
 
-### 1.3 AI 时代的工作流
+### 1.3 AI 时代的工作流（方案 A）
 
-1. **propose 阶段**：根据 PRD / 本计划，在对应模块下维护 `test-spec.md`（或本节表格），产出 `[r*] [i*] [s*]` 断言 ID。
-2. **apply 阶段**：生成测试时 `it('[i1] …')` 必须以 ID 开头；失败时可追溯 PRD 条目。
-3. **维护**：UI 变更时优先改 test-spec 与 MSW handler，由 AI 同步更新测试。
+1. **拆解阶段**：新需求在 [.doc/specs/active/](../.doc/specs/active/) 生成 `spec.md` → `plan.md` → `tasks.md`；详见 [.doc/README.md](../.doc/README.md)。
+2. **propose 阶段**：在对应模块 `test-spec.md` 维护 `[r*] [i*] [s*] [u*]` 断言 ID（见 §5 索引）。
+3. **apply 阶段**：生成测试时 `it('[i1] …')` 必须以 ID 开头；失败时可追溯 PRD 条目。
+4. **维护**：UI 变更时优先改 test-spec 与 MSW handler，由 AI 同步更新测试。
 
 ### 1.4 断言 ID 约定
 
@@ -38,6 +39,7 @@ Playwright E2E（少）→ Web 关键用户路径（5～8 条）
 | `[rN]` | Render 渲染 | 表格列、状态徽章、空态文案 |
 | `[iN]` | Interaction 交互 | 点击、提交、切换周 |
 | `[sN]` | State 状态 | 错误提示、loading、接口失败态 |
+| `[uN]` | Unit / Logic 逻辑 | 纯函数、规则、格式化、统计 |
 
 每条 ID 在表格中关联：**PRD 需求 ID**、**AC 编号**（如有）、**测试类型**、**实现位置**。
 
@@ -69,37 +71,27 @@ Playwright E2E（少）→ Web 关键用户路径（5～8 条）
 
 Ant Design 组件测试默认使用 `jsdom`，并在测试 setup 中统一 polyfill `ResizeObserver`、`matchMedia`、`scrollIntoView` 等浏览器 API。后续如验证 `happy-dom` 兼容性足够，再评估切换。
 
-### 2.2 目录结构（目标）
+### 2.2 目录结构（方案 A）
 
 ```text
 easyshift/
-├── apps/api/src/
-│   ├── services/
-│   ├── services/schedule/
-│   │   ├── rule-warnings.ts                              # 规则校验（WEB-VAL-02～03）
-│   │   ├── warnings.ts                                 # 覆盖 + 规则警告合并
-│   │   ├── rule-warnings.test.ts                         # UNIT
-│   │   └── validation.test.ts                            # UNIT
-│   │   ├── stats/
-│   │   └── publish/
-│   └── __tests__/                                       # API
-│       ├── setup.ts
-│       ├── publish.test.ts
-│       └── binding.test.ts
-├── apps/web/src/
-│   ├── features/schedule/
-│   │   ├── ScheduleGrid.tsx
-│   │   ├── test-spec.md                                 # 模块规格
-│   │   └── __tests__/ScheduleGrid.test.tsx              # COMP
-│   └── test/
-│       ├── server.ts                                    # MSW setupServer
-│       └── handlers.ts                                  # 组件测试 mock
-├── packages/shared-types/src/
-│   └── shift-time/__tests__/                            # UNIT 跨端
-├── e2e/
-│   ├── ui-test-spec.md                                  # E2E 行为 + 路由
-│   └── *.spec.ts
-├── docs/TEST_PLAN.md                                    # 本文档
+├── .doc/                                                # SDD 执行区（变更 spec/plan/tasks）
+│   ├── prd/
+│   ├── specs/active/                                    # 进行中的 feature spec
+│   ├── specs/archive/
+│   └── runs/
+├── docs/                                                # 长期权威文档（PRD、API、本计划）
+├── apps/api/src/services/
+│   ├── schedule/test-spec.md                            # 校验、覆盖、复制上周
+│   ├── auth/test-spec.md                                # 小程序绑定
+│   └── staff/test-spec.md                               # 小程序班表 API
+├── apps/web/src/features/
+│   ├── auth/test-spec.md
+│   ├── employees/test-spec.md
+│   ├── shift-types/test-spec.md
+│   └── schedule/test-spec.md                            # 排班表 + 发布 UI
+├── apps/miniapp/test-spec.md                            # 小程序手工验收
+├── e2e/ui-test-spec.md
 └── vitest.workspace.ts
 ```
 
@@ -146,211 +138,32 @@ easyshift/
 
 ---
 
-## 5. 模块 test-spec
+## 5. 模块 test-spec 索引
 
-以下各节为 **test-spec 骨架**。实现时在对应 feature 目录创建 `test-spec.md`，表格内容与本文保持同步。
+断言详情维护在模块旁 `test-spec.md`；本节仅作索引，**勿在此重复表格**（避免双写漂移）。
 
----
+| 模块 | PRD | AC | test-spec | SDD feature-id（新变更时） |
+|------|-----|-----|-----------|---------------------------|
+| 认证（Web） | WEB-AUTH-01～04 | — | [auth/test-spec.md](../apps/web/src/features/auth/test-spec.md) | `auth-web` |
+| 员工管理 | WEB-EMP-01～07 | AC-01 | [employees/test-spec.md](../apps/web/src/features/employees/test-spec.md) | `employees` |
+| 班次类型 | WEB-SHIFT-01～06 | AC-02 | [shift-types/test-spec.md](../apps/web/src/features/shift-types/test-spec.md) | `shift-types` |
+| 排班表 + 发布 UI | WEB-SCH、WEB-PUB | AC-03、06～09 | [schedule/test-spec.md](../apps/web/src/features/schedule/test-spec.md) | `schedule-editor`、`schedule-publish` |
+| 排班校验 / 覆盖 / 复制 | WEB-VAL、WEB-STAT、WEB-SCH-07 | AC-04～06 | [schedule/test-spec.md（API）](../apps/api/src/services/schedule/test-spec.md) | `schedule-validation` |
+| 发布服务 | WEB-PUB | AC-07～09 | [schedule/test-spec.md（API）](../apps/api/src/services/schedule/test-spec.md) | `schedule-publish` |
+| 小程序绑定 | MP-AUTH | AC-10 | [auth/test-spec.md（API）](../apps/api/src/services/auth/test-spec.md) | `miniapp-binding` |
+| 小程序班表 | MP-SCH | AC-11～13 | [staff/test-spec.md](../apps/api/src/services/staff/test-spec.md) | `miniapp-my-schedule` |
+| 小程序手工验收 | — | AC-10～13 | [miniapp/test-spec.md](../apps/miniapp/test-spec.md) | — |
+| E2E | — | AC-03～09 | [e2e/ui-test-spec.md](../e2e/ui-test-spec.md) | — |
 
-### 5.1 认证（Web）
-
-**PRD**：WEB-AUTH-01～04 · **文件**：`apps/web/src/features/auth/test-spec.md`
-
-| ID | 类型 | PRD | 断言 | 测试 |
-|----|------|-----|------|------|
-| r1 | 渲染 | WEB-AUTH-03 | 未登录访问 `/schedule` 重定向登录页 | COMP |
-| i1 | 交互 | WEB-AUTH-01 | 正确手机号+密码提交后进入首页 | COMP + E2E |
-| s1 | 状态 | WEB-AUTH-01 | 错误密码显示明确错误文案 | COMP |
-| s2 | 状态 | WEB-AUTH-02 | 登录响应 Set-Cookie 含 HttpOnly | API |
-
----
-
-### 5.2 员工管理
-
-**PRD**：WEB-EMP-01～07 · **AC**：AC-01 · **文件**：`apps/web/src/features/employees/test-spec.md`
-
-| ID | 类型 | PRD | 断言 | 测试 |
-|----|------|-----|------|------|
-| r1 | 渲染 | WEB-EMP-01 | 表格列：姓名、工号、岗位、手机号、状态 | COMP |
-| r2 | 渲染 | WEB-EMP-05 | 绑定状态列显示「已绑定」/「未绑定」 | COMP |
-| i1 | 交互 | WEB-EMP-02 | 点「新增员工」打开表单 | COMP |
-| i2 | 交互 | WEB-EMP-02 | 提交合法表单后列表刷新含新员工 | COMP + API |
-| i3 | 交互 | WEB-EMP-06 | 点「生成绑定码」展示码并提供复制 | COMP + API |
-| s1 | 状态 | WEB-EMP-02 / AC-01 | 工号重复 → 表单错误「工号已存在」 | COMP + API |
-| s2 | 状态 | WEB-EMP-04 | 停用员工后状态为 inactive | API |
-| s3 | 状态 | — | POST 重复工号返回 409 | API |
-| s4 | 状态 | WEB-EMP-06 / WEB-EMP-07 | 已绑定员工不展示「绑定码」操作，后端生成绑定码返回 `ALREADY_BOUND` | COMP + API |
-
----
-
-### 5.3 班次类型
-
-**PRD**：WEB-SHIFT-01～06 · **AC**：AC-02 · **实现**：`apps/web/src/features/shift-types/ShiftTypesPage.tsx`
-
-| ID | 类型 | PRD | 断言 | 测试 | 状态 |
-|----|------|-----|------|------|------|
-| r1 | 渲染 | WEB-SHIFT-01 | 列表含名称、代码、规则类型、时间段、颜色 | COMP | — |
-| i1 | 交互 | WEB-SHIFT-02 | 编辑大夜班开始时间与时长并保存 | COMP + API | ✓ `shift-types.test.ts` |
-| i2 | 交互 | WEB-SHIFT-05 | 修改某班次最低覆盖人数 | COMP + API | ✓ |
-| i3 | 交互 | WEB-SHIFT-06 | 新增/编辑时可选择规则类型 kind；code 可改为中文/英文 | COMP + API | ✓ |
-| s1 | 状态 | WEB-SHIFT-04 | 「休息」班次时间段可为空 | UNIT + API | ✓ |
-| s2 | 状态 | — | 代码重复返回 409 | API | ✓ |
-| u1 | 逻辑 | WEB-SHIFT 默认 N | 大夜班 20:00 + 720min → 展示跨至次日 08:00 | UNIT | — |
-
-**API 位置**：`apps/api/src/shift-types.test.ts`
-
----
-
-### 5.4 排班表（核心）
-
-**PRD**：WEB-SCH-01～12 · **AC**：AC-03、AC-06 · **文件**：`apps/web/src/features/schedule/components/__tests__/ScheduleGrid.test.tsx`、`packages/shared-types/src/__tests__/chinese-calendar.test.ts`
-
-| ID | 类型 | PRD | 断言 | 测试 |
-|----|------|-----|------|------|
-| r1 | 渲染 | WEB-SCH-01 / AC-03 | 10 行员工 × 7 列（周一至周日） | COMP + E2E |
-| r2 | 渲染 | WEB-SCH-03 | 顶部展示周期起止日期与状态徽章 | COMP |
-| r3 | 渲染 | WEB-SCH-09 | 单元格展示班次简称与配置颜色 | COMP |
-| r4 | 渲染 | WEB-SCH-10 / AC-06 | 每日各班次「已排/最低」统计行 | COMP |
-| r5 | 渲染 | WEB-STAT-03 / AC-06 | 未达标单元格/行高亮 | COMP |
-| r6 | 渲染 | WEB-SCH-12 | 表头展示法定节日名（如「端午」「春节」）、普通周末「休」、调休上班「班」；节日优先于周末 | COMP |
-| r7 | 渲染 | WEB-SCH-10 | 覆盖统计隐藏 `0/0`；`min=0` 且已排人数 > 0 时仅展示人数 | COMP |
-| i1 | 交互 | WEB-SCH-02 / AC-03 | 点击空格弹出班次选择，选中后格内更新 | COMP + E2E |
-| i2 | 交互 | WEB-SCH-02 | 支持清空单元格班次 | COMP |
-| i3 | 交互 | WEB-SCH-04 | 「创建下周排班」生成空草稿周期 | COMP + API |
-| i4 | 交互 | WEB-DEPT-03 | 切换上一周/下一周加载对应周期 | COMP |
-| i5 | 交互 | WEB-SCH-05 | 已发布周期编辑首格时弹出二次确认 | COMP |
-| i6 | 交互 | WEB-SCH-11 | 周 / 月视图切换后，月视图可浏览整月并跳转到对应周视图 | COMP |
-| s1 | 状态 | WEB-SCH-06 / AC-08 | 已发布周期改草稿后徽章「有未发布变更」 | COMP + API + E2E |
-| s2 | 状态 | WEB-SCH-08 | 停用员工不出现在新周期行中 | API |
-| s3 | 状态 | — | 接口 500 时排班表显示「加载失败」 | COMP |
-
----
-
-### 5.5 冲突与校验
-
-**PRD**：WEB-VAL-01～06 · **AC**：AC-05 · **实现**：`apps/api/src/services/schedule/rule-warnings.ts`、`warnings.ts`
-
-| ID | 类型 | PRD | 断言 | 测试 | 状态 |
-|----|------|-----|------|------|------|
-| u1 | 逻辑 | WEB-VAL-01 / AC-05 | 同员工同天两班次 → 保存 API 返回 `409 SCHEDULE_ENTRY_CONFLICT` | API | ✓ `schedule.test.ts` |
-| u2 | 逻辑 | WEB-VAL-02 | 大夜结束后 24h 内白班 → `warnings` 含 `REST_VIOLATION` | UNIT | ✓ `rule-warnings.test.ts` |
-| c1 | 交互 | WEB-VAL-06 | 初次进入排班页不展开 warnings 摘要，点击「检查排班」后展示 | COMP | — |
-| u3 | 逻辑 | WEB-VAL-03 | 连续 3 天大夜 → `warnings` 含 `CONSECUTIVE_NIGHT` | UNIT | ✓ `rule-warnings.test.ts` |
-| u6 | 逻辑 | WEB-VAL-02 / WEB-SHIFT-06 | code 为「夜/白」但 kind 为 night/day → 规则仍生效 | UNIT | ✓ `rule-warnings.test.ts` |
-| u4 | 逻辑 | WEB-VAL-04 / AC-05 | 白班最低 3 人只排 2 人 → `warnings` 含 `COVERAGE_BELOW_MIN` | UNIT + API | ✓ `validation.test.ts`、`schedule.test.ts` |
-| u5 | 逻辑 | WEB-VAL-05 | 大夜次数 > 均值+1 → `warnings` 含公平性警告 | UNIT | 未实现（P2） |
-| s1 | 状态 | WEB-VAL-01 | 保存含 hard error 时 API 返回 409 | API | ✓ `schedule.test.ts` |
-| s2 | 状态 | WEB-VAL-04 | 仅 warnings 时保存成功；warnings 经 grid / validation 接口返回 | API | ✓ |
-| i1 | 交互 | AC-05 | 同天双班时 UI 阻止保存并展示错误 | COMP + E2E | — |
-
-**UNIT 位置**：`apps/api/src/services/schedule/rule-warnings.test.ts`、`validation.test.ts`
-
----
-
-### 5.6 覆盖人数统计
-
-**PRD**：WEB-STAT-03 · **AC**：AC-06 · **文件**：`apps/api/src/services/stats/test-spec.md`
-
-| ID | 类型 | PRD | 断言 | 测试 |
-|----|------|-----|------|------|
-| u1 | 逻辑 | AC-06 | 某日白班 3 人、最低 3 → 不标记 under | UNIT |
-| u2 | 逻辑 | AC-06 | 某日大夜 0 人、最低 1 → 标记 under | UNIT |
-| u3 | 逻辑 | — | 「休息」班次不计入当班覆盖（除非业务定义计入） | UNIT |
-| u4 | 逻辑 | — | 停用班次不可新排，历史快照计数不变 | API |
-
----
-
-### 5.7 发布
-
-**PRD**：WEB-PUB-01～05 · **AC**：AC-07、AC-08、AC-09 · **文件**：`apps/web/src/features/publish/test-spec.md`
-
-| ID | 类型 | PRD | 断言 | 测试 |
-|----|------|-----|------|------|
-| r1 | 渲染 | WEB-PUB-04 / AC-07 | 已发布周期显示版本号与发布时间 | COMP + E2E |
-| i1 | 交互 | WEB-PUB-01 / AC-07 | 草稿态「发布本周期」可点击 | COMP + E2E |
-| i2 | 交互 | WEB-PUB-02 | 发布前弹窗展示 warnings 摘要 | COMP + E2E |
-| i3 | 交互 | WEB-PUB-05 / AC-09 | 发布成功后「复制通知文案」可用 | COMP |
-| s1 | 状态 | WEB-PUB-01 | 无未发布变更的已发布周期按钮 disabled | COMP |
-| s2 | 状态 | AC-07 | 发布后 `latest_published_version` 递增 | API |
-| s3 | 状态 | AC-08 | 改草稿后员工 API 仍返回旧 snapshot version | API + E2E |
-| s4 | 状态 | AC-08 | 再次发布后员工 API 返回新 snapshot version | API + E2E |
-| s5 | 状态 | PRD 5.4 | 并发两次发布不产生重复 version | API |
-| u1 | 逻辑 | WEB-PUB-05 / AC-09 | 通知文案含周期、版本、发布时间 | UNIT |
-
-**API 位置**：`apps/api/src/__tests__/publish.test.ts`（最高优先级集成测试）
-
----
-
-### 5.8 复制上周
-
-**PRD**：WEB-SCH-07 · **AC**：AC-04 · **文件**：`apps/api/src/__tests__/schedule-copy.test.ts`
-
-| ID | 类型 | PRD | 断言 | 测试 |
-|----|------|-----|------|------|
-| u1 | 逻辑 | AC-04 | 源周条目日期 +7 天映射到目标周 | UNIT |
-| s1 | 状态 | AC-04 | 复制后目标周草稿条目数 = 源周非空条目数 | API |
-| s2 | 状态 | WEB-SCH-07 | 复制覆盖目标周已有草稿 | API |
-
----
-
-### 5.9 小程序绑定
-
-**PRD**：MP-AUTH-01～08 · **AC**：AC-10 · **文件**：`apps/api/src/__tests__/binding.test.ts`
-
-| ID | 类型 | PRD | 断言 | 测试 |
-|----|------|-----|------|------|
-| s1 | 状态 | AC-10 | 正确绑定码 + 手机号后四位 → 200，签发 Bearer Token | API |
-| s2 | 状态 | MP-AUTH-06 | 错误绑定码 → 4xx + 明确 error code | API |
-| s3 | 状态 | MP-AUTH-06 | 手机号后四位不匹配 → 4xx | API |
-| s4 | 状态 | MP-AUTH-07 | 绑定成功后码 status=used | API |
-| s5 | 状态 | MP-AUTH-04 | 已绑定员工再次绑定 → 4xx | API |
-| s6 | 状态 | MP-AUTH-04 | 同一 openid 绑第二人 → 4xx | API |
-| s7 | 状态 | A-03 | 解绑后旧 Token → 401 | API |
-| s8 | 状态 | A-03 / WEB-EMP-04 | 已绑定员工停用后再次 login → `bound=false`，不签发 Token | API + MANUAL |
-
----
-
-### 5.10 小程序班表
-
-**PRD**：MP-SCH-01～07 · **AC**：AC-11、AC-12、AC-13
-
-| ID | 类型 | PRD | 断言 | 测试 |
-|----|------|-----|------|------|
-| s1 | 状态 | AC-11 / MP-SCH-04 | 仅草稿无发布 → 空态「班表尚未发布」 | API + MANUAL |
-| s2 | 状态 | AC-11 / MP-SCH-03 | 有发布快照 → 返回 entries | API + MANUAL |
-| s3 | 状态 | AC-12 | 条目含班次名、日期、时间段、published_at | API + MANUAL |
-| s4 | 状态 | MP-SCH-06 | OFF 休息班次显式展示，非空白 | API + MANUAL |
-| s5 | 状态 | AC-13 | 员工 A token 查员工 B schedule → 403 | API |
-| s6 | 状态 | A-03 / WEB-EMP-04 | 员工停用后旧 Token 访问 `/staff/me` / `/staff/schedule` → 401 或 403，客户端清 session 并回绑定页 | API + MANUAL |
-| u1 | 逻辑 | MP-SCH / 风险表 | 大夜班跨日展示文案正确 | UNIT + MANUAL |
+新功能拆解与执行包见 [.doc/specs/active/](../.doc/specs/active/)。
 
 ---
 
 ## 6. Playwright E2E 场景
 
-**文件**：`e2e/tests/*.spec.ts` + `e2e/helpers/*.ts`
+场景表与实现状态见 [e2e/ui-test-spec.md](../e2e/ui-test-spec.md)。
 
 v1 **不做**多模态视觉 diff；仅行为断言。E2E 通过 Playwright `webServer` 自动启动 Web + API，默认使用真 MySQL 与微信 mock。测试周次使用远期隔离周，避免与日常排班数据冲突；长期仍应补充 teardown 或测试库重置，避免 E2E 数据持续堆积。
-
-| 场景 ID | 关联 AC | 步骤 | 期望 |
-|---------|---------|------|------|
-| E2E-01 | AC-03 | 登录 → 创建隔离周周期 → 为员工排 1 格 → 保存 | 刷新后格子内容保留 |
-| E2E-02 | AC-05、AC-06 | 故意少排大夜 → 点发布 | 确认弹窗含 `COVERAGE_BELOW_MIN` 等排班 warning |
-| E2E-03 | AC-05、AC-06 | 排班表存在覆盖不足 | 页面统计区高亮未达标班次 |
-| E2E-04 | AC-07 | 发布成功 | 页面显示 version=1 与发布时间 |
-| E2E-05 | AC-08 | 发布后改一格 → 查员工 API | 仍为 v1；再发布后 API 为 v2 |
-| E2E-06 | AC-09 | 发布成功 → 点复制文案 | 剪贴板/textarea 含周期信息 |
-
-**实现状态（v1 首发）**
-
-| 场景 ID | 状态 | 实现位置 | 说明 |
-|---------|------|----------|------|
-| E2E-01 | ✅ 已实现 | `e2e/tests/schedule.spec.ts` | 排班保存 |
-| E2E-04 | ✅ 已实现 | 同上 | 发布成功 |
-| E2E-05 | ✅ 已实现 | 同上 | 发布后改班 → 员工仍看旧版 → 再发布看新版 |
-| E2E-02 | ✅ 已实现 | `e2e/tests/schedule.spec.ts` | 覆盖不足 warning 弹窗 |
-| E2E-03 | ⏸ 不做 | — | 与 E2E-02 重叠（统计区高亮），二选一即可 |
-| E2E-06 | ✅ 已实现 | 同上 | 复制微信群通知文案 |
 
 **首发范围**：E2E-01 / 02 / 04 / 05 / 06 已实现；E2E-03 与 02 重叠，**不做**。E2E-02 / 06 对应逻辑亦在 API 单测（`publish.test.ts`、`validation.test.ts`、`notify-text.test.ts` 等）覆盖。
 
@@ -400,11 +213,11 @@ interactions:
 
 | 模块 | 文件 | 覆盖 ID |
 |------|------|---------|
-| 排班校验 | `rule-warnings.test.ts`、`validation.test.ts` | u2～u4、u6（第 5.5 节） |
-| 覆盖统计 | `coverage-counter.test.ts` | u1～u3（第 5.6 节） |
-| 班次跨日 | `shift-time.test.ts` | u1（第 5.3 节）、u1（第 5.10 节） |
-| 复制上周日期映射 | `copy-week.test.ts` | u1（第 5.8 节） |
-| 通知文案 | `notify-text.test.ts` | u1（第 5.7 节） |
+| 排班校验 | `rule-warnings.test.ts`、`validation.test.ts` | 见 `services/schedule/test-spec.md` |
+| 覆盖统计 | `coverage-counter.test.ts` | 同上 |
+| 班次跨日 | `shift-time.test.ts` | 见 `shift-types/test-spec.md`、staff test-spec |
+| 复制上周日期映射 | `copy-week.test.ts` | 见 `services/schedule/test-spec.md` |
+| 通知文案 | `notify-text.test.ts` | 见 `services/schedule/test-spec.md` |
 
 ---
 
@@ -465,6 +278,7 @@ on: push main / release
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.9 | 2026-07-01 | 方案 A：`.doc/` SDD 工作区；§5 断言迁出至各模块 `test-spec.md` |
 | v1.8 | 2026-06-30 | 补 Playwright E2E-02（覆盖 warning 弹窗）、E2E-06（复制通知文案） |
 | v1.7 | 2026-06-30 | 明确 E2E 首发范围：01/04/05 已实现；02/03/06 不阻塞上线，后补 02+06 |
 | v1.6 | 2026-06-30 | WEB-SCH-12 r6 已实现；补充日历单测路径与断言说明 |

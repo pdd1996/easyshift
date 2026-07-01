@@ -350,9 +350,10 @@ v1 不要求 Kubernetes 或微服务拆分。
 | E2E | Playwright（CI headless） | Web 关键路径 5～8 条 |
 | 小程序 | API 集成 + 手工清单 | 不做 UI 自动化 |
 
-### 11.2 规格驱动
+### 11.2 规格驱动（方案 A）
 
-- 功能开发 **propose** 阶段：维护模块 `test-spec.md`，断言拆为 `[rN]` 渲染、`[iN]` 交互、`[sN]` 状态。
+- **变更执行**：`.doc/specs/active/{feature-id}/` 维护 `spec.md` → `plan.md` → `tasks.md`（见 [.doc/README.md](../.doc/README.md)）。
+- **模块验收**：各 feature 维护 `test-spec.md`，断言拆为 `[rN]` 渲染、`[iN]` 交互、`[sN]` 状态、`[uN]` 逻辑。
 - **apply** 阶段：`it('[i1] …')` 描述以 ID 开头，失败可追溯 PRD。
 - MSW handler 放在 `apps/web/src/test/handlers.ts`，用于组件测试；E2E 默认真 Web + 真 API + 真 MySQL，并由 Playwright `webServer` 启动本地 Web/API。
 

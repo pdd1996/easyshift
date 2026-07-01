@@ -9,6 +9,8 @@
 | [docs/PRD.md](./docs/PRD.md) | 产品需求、功能范围、验收标准 |
 | [docs/TECH_STACK.md](./docs/TECH_STACK.md) | 技术选型、Monorepo 结构 |
 | [docs/TEST_PLAN.md](./docs/TEST_PLAN.md) | 测试策略、AC 映射 |
+| [.doc/README.md](./.doc/README.md) | SDD 工作区（spec / plan / tasks） |
+| [docs/ADR-0001-sdd-doc-structure.md](./docs/ADR-0001-sdd-doc-structure.md) | SDD 文档结构决策记录 |
 | [docs/DEV_GUIDE.md](./docs/DEV_GUIDE.md) | 本地开发、环境变量、常用命令 |
 | [docs/DATABASE.md](./docs/DATABASE.md) | 数据库表结构、索引、迁移 |
 | [docs/API.md](./docs/API.md) | REST 接口契约、错误码 |
@@ -44,6 +46,7 @@ pnpm dev                                 # 并行启动 api + web
 
 ```text
 easyshift/
+├── .doc/             # SDD 执行区（specs/active、归档、测试运行记录）
 ├── apps/
 │   ├── web/          # React 管理端
 │   ├── miniapp/      # 微信小程序

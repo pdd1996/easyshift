@@ -19,7 +19,8 @@ Applies when editing docs **or** auth/binding/employee/schedule/API-related code
 | Schema, status fields, migrations | `docs/DATABASE.md` |
 | Auth, tokens, CSRF, permissions | `docs/SECURITY.md` |
 | Local setup, debugging, env | `docs/DEV_GUIDE.md` |
-| Test IDs, coverage mapping | `docs/TEST_PLAN.md` |
+| Test IDs, coverage mapping | `docs/TEST_PLAN.md` + module `test-spec.md` |
+| Feature change specs (SDD) | `.doc/specs/active/{feature-id}/` |
 | Deploy, backup, ops | `docs/DEPLOYMENT.md` |
 | Stack, monorepo, test commands | `docs/TECH_STACK.md` |
 
