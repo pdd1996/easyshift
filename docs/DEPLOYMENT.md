@@ -7,7 +7,7 @@
 
 v1 采用简单部署：静态 Web + 单进程 API + MySQL，不要求 Kubernetes。
 
-**可执行骨架**（Docker Compose + GitHub Actions）：见仓库根目录 [deploy/README.md](../deploy/README.md)。
+**可执行骨架**（Docker Compose + GitHub Actions）：见 [deploy/README.md](../deploy/README.md) §2（[首次部署](../deploy/README.md#首次部署) / [日常更新](../deploy/README.md#日常更新) 命令速查）。
 
 ---
 
@@ -92,10 +92,12 @@ Docker 示例要点：
 
 字符集：`utf8mb4` / `utf8mb4_unicode_ci`。
 
-首次部署：
+Docker Compose 部署（ECS 推荐）：完整命令见 [deploy/README.md](../deploy/README.md#2-部署命令)。
+
+非 Docker（PM2 / 裸机）首次部署：
 
 ```bash
-pnpm db:migrate    # 在 API 容器/主机执行
+pnpm db:migrate    # 在 API 主机执行
 pnpm db:seed       # 仅首次；生产 seed 后立刻改密
 ```
 
