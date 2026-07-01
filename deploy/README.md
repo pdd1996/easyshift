@@ -37,21 +37,70 @@ cp deploy/.env.example .env
 # 暂无域名时保持 WX_MOCK=false，只测 Web/API
 ```
 
-5. 首次启动：
-
-```bash
-docker compose build
-docker compose run --rm api /app/apps/api/node_modules/.bin/tsx src/db/migrate.ts
-docker compose run --rm api /app/apps/api/node_modules/.bin/tsx src/db/seed.ts   # 仅首次
-docker compose up -d
-curl http://127.0.0.1/api/v1/health
-```
+5. 执行 [§2 首次部署](#2-部署命令) 中的命令。
 
 浏览器访问 `http://ECS公网IP`，默认管理员密码见 `.env` 的 `SEED_ADMIN_PASSWORD`。
 
 ---
 
-## 2. GitHub Actions 自动部署
+## 2. 部署命令
+
+在服务器上进入项目目录后执行（默认路径 `/opt/easyshift`）。
+
+### 首次部署
+
+空库、从未执行过 seed 时使用（含建表 + 初始数据）：
+
+```bash
+cd /opt/easyshift
+
+docker compose build
+docker compose run --rm api /app/apps/api/node_modules/.bin/tsx src/db/migrate.ts
+docker compose run --rm api /app/apps/api/node_modules/.bin/tsx src/db/seed.ts
+docker compose up -d
+
+docker compose ps
+curl http://127.0.0.1/api/v1/health
+```
+
+### 日常更新
+
+已有数据、之前 seed 成功过时使用（**不要**再跑 seed）：
+
+```bash
+cd /opt/easyshift
+git pull --ff-only origin main
+
+docker compose build
+docker compose run --rm api /app/apps/api/node_modules/.bin/tsx src/db/migrate.ts
+docker compose up -d
+
+docker compose ps
+curl http://127.0.0.1/api/v1/health
+```
+
+也可一条命令（等价于上面 `git pull` 至 health 检查，不含 seed）：
+
+```bash
+cd /opt/easyshift && bash scripts/deploy-remote.sh
+```
+
+### 步骤说明
+
+| 步骤 | 首次 | 日常 | 说明 |
+|------|:----:|:----:|------|
+| `git pull` | 可选 | ✅ | 克隆后首次可跳过；日常更新必做 |
+| `docker compose build` | ✅ | ✅ | 代码打进镜像，代码变更后必须重建 |
+| `migrate.ts` | ✅ | ✅ | 只应用未执行过的 migration，无新 migration 时几乎空跑 |
+| `seed.ts` | ✅ | ❌ | 仅首次；库里已有科室时会自动跳过，但日常不应依赖此行为 |
+| `docker compose up -d` | ✅ | ✅ | 用新镜像启动/重启容器 |
+| `ps` / `curl health` | 建议 | 建议 | 确认服务正常 |
+
+`git pull` **不会**覆盖 `.env`（已在 `.gitignore`）；MySQL 数据在 Docker volume `mysql_data` 中，拉代码不会清空数据库。
+
+---
+
+## 3. GitHub Actions 自动部署（推荐）
 
 仓库 **Settings → Secrets and variables → Actions** 添加：
 
@@ -62,18 +111,17 @@ curl http://127.0.0.1/api/v1/health
 | `ECS_SSH_KEY` | 私钥全文 |
 | `DEPLOY_PATH` | `/opt/easyshift`（可选） |
 
-服务器需已配置对应公钥。之后 `git push origin main` 会执行 `scripts/deploy-remote.sh`（pull → build → migrate → up → health）。
+服务器需已配置对应公钥。之后本地 `git push origin main` 即可触发 [日常更新](#日常更新) 流程（pull → build → migrate → up → health），无需 SSH 手敲命令。
 
 ---
 
-## 3. 日常命令（在服务器上）
+## 4. 运维命令（在服务器上）
 
 ```bash
 cd /opt/easyshift
 docker compose ps
 docker compose logs -f api
-bash scripts/deploy-remote.sh          # 手动部署
-docker compose run --rm api /app/apps/api/node_modules/.bin/tsx src/db/migrate.ts
+bash scripts/deploy-remote.sh          # 手动触发日常更新
 ```
 
 备份（测试环境手动即可）：
