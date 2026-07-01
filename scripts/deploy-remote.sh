@@ -16,7 +16,7 @@ echo "==> 构建镜像"
 docker compose build
 
 echo "==> 数据库迁移"
-docker compose run --rm api pnpm exec tsx src/db/migrate.ts
+docker compose run --rm api /app/apps/api/node_modules/.bin/tsx src/db/migrate.ts
 
 echo "==> 启动服务"
 docker compose up -d --remove-orphans

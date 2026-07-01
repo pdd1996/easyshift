@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 
 FROM node:20-alpine AS base
-RUN corepack enable && corepack prepare pnpm@9 --activate
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 
 FROM base AS deps
@@ -33,12 +34,14 @@ COPY --from=build /app/apps/api/src apps/api/src
 COPY --from=build /app/packages/shared-types packages/shared-types
 COPY --from=deps /app/node_modules node_modules
 COPY --from=deps /app/apps/api/node_modules apps/api/node_modules
+RUN mkdir -p /home/easyshift/.cache && chown -R easyshift:easyshift /home/easyshift
 USER easyshift
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app/apps/api
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/api/v1/health >/dev/null || exit 1
-CMD ["pnpm", "exec", "tsx", "dist/index.js"]
+CMD ["/app/apps/api/node_modules/.bin/tsx", "dist/index.js"]
 
 FROM nginx:1.27-alpine AS web
 COPY deploy/nginx/default.conf /etc/nginx/conf.d/default.conf

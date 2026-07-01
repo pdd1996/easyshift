@@ -41,8 +41,8 @@ cp deploy/.env.example .env
 
 ```bash
 docker compose build
-docker compose run --rm api pnpm exec tsx src/db/migrate.ts
-docker compose run --rm api pnpm exec tsx src/db/seed.ts   # 仅首次
+docker compose run --rm api /app/apps/api/node_modules/.bin/tsx src/db/migrate.ts
+docker compose run --rm api /app/apps/api/node_modules/.bin/tsx src/db/seed.ts   # 仅首次
 docker compose up -d
 curl http://127.0.0.1/api/v1/health
 ```
@@ -73,7 +73,7 @@ cd /opt/easyshift
 docker compose ps
 docker compose logs -f api
 bash scripts/deploy-remote.sh          # 手动部署
-docker compose run --rm api pnpm exec tsx src/db/migrate.ts
+docker compose run --rm api /app/apps/api/node_modules/.bin/tsx src/db/migrate.ts
 ```
 
 备份（测试环境手动即可）：
