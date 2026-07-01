@@ -91,7 +91,9 @@ async function main() {
   console.log(`Admin password: ${env.SEED_ADMIN_PASSWORD}`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
