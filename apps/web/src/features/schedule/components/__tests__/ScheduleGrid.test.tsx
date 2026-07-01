@@ -1,6 +1,7 @@
 import type { ScheduleEntryDto } from '@easyshift/shared-types';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SchedulePage } from '../../SchedulePage';
 import { ScheduleGrid } from '../ScheduleGrid';
@@ -168,7 +169,11 @@ describe('SchedulePage schedule grid assignment', () => {
       }),
     );
 
-    renderWithProviders(<SchedulePage />);
+    renderWithProviders(
+      <MemoryRouter>
+        <SchedulePage />
+      </MemoryRouter>,
+    );
 
     await screen.findByText('员工1');
 

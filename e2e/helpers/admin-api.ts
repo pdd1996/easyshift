@@ -37,6 +37,11 @@ export interface StaffScheduleRecord {
   days: Array<{ workDate: string; shift: { code: string } | null }>;
 }
 
+export interface DepartmentRecord {
+  id: number;
+  name: string;
+}
+
 async function parseJson<T>(res: Response): Promise<T> {
   const body = (await res.json()) as T | ApiError;
   if (!res.ok) {
@@ -97,6 +102,14 @@ export class AdminApiClient {
       body: JSON.stringify(input),
     });
     const body = await parseJson<ApiEnvelope<EmployeeRecord>>(res);
+    return body.data;
+  }
+
+  async getDepartment(): Promise<DepartmentRecord> {
+    const res = await fetch(`${E2E_CONFIG.apiBaseUrl}/department`, {
+      headers: this.adminHeaders(),
+    });
+    const body = await parseJson<ApiEnvelope<DepartmentRecord>>(res);
     return body.data;
   }
 

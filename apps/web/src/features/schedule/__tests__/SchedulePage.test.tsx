@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SchedulePage } from '../SchedulePage';
 import {
@@ -30,7 +31,11 @@ describe('SchedulePage', () => {
       }),
     );
 
-    renderWithProviders(<SchedulePage />);
+    renderWithProviders(
+      <MemoryRouter>
+        <SchedulePage />
+      </MemoryRouter>,
+    );
 
     const checkButton = await screen.findByRole('button', { name: '检查排班（1）' });
     expect(screen.queryByText('排班警告')).not.toBeInTheDocument();
@@ -51,7 +56,11 @@ describe('SchedulePage', () => {
       }),
     );
 
-    renderWithProviders(<SchedulePage />);
+    renderWithProviders(
+      <MemoryRouter>
+        <SchedulePage />
+      </MemoryRouter>,
+    );
 
     await waitFor(() => {
       expect(screen.getByText('排班表加载失败')).toBeInTheDocument();

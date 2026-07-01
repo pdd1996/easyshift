@@ -42,11 +42,13 @@ test.describe('Schedule E2E', () => {
   let dayShift: ShiftTypeRecord;
   let employee: EmployeeRecord;
   let staffToken: string;
+  let departmentName: string;
 
   test.beforeAll(async () => {
     await waitForApiHealth();
     admin = new AdminApiClient();
     await admin.login();
+    departmentName = (await admin.getDepartment()).name;
 
     dayShift = await admin.ensureDayShiftType(DAY_SHIFT_CODE);
 
@@ -151,7 +153,7 @@ test.describe('Schedule E2E', () => {
     await confirmPublishDialog(publishDialog);
 
     const notificationText = await readNotificationText(page);
-    expect(notificationText).toContain('【心内科】');
+    expect(notificationText).toContain(`【${departmentName}】`);
     expect(notificationText).toContain(formatWeekRange(WEEK_E2E_06));
     expect(notificationText).toContain('班表已更新');
     expect(notificationText).toContain('第 1 版');
